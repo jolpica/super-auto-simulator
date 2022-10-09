@@ -383,3 +383,80 @@ class TriggerTestCase(TestCase):
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+
+
+class CompoundTriggerTestCase(TestCase):
+    def setUp(self):
+        self.pet1 = Mock(Pet)
+        self.pet2 = Mock(Pet)
+        self.pet3 = Mock(Pet)
+        self.pet4 = Mock(Pet)
+        self.none_event = Event(EventType.NONE)
+        self.start_of_turn_event = Event(
+            EventType.START_OF_TURN,
+            self.pet1,
+            teams=[[self.pet1, self.pet2]],
+        )
+
+    def test_friendly_pet_level_up(self):
+        """Test clownfish Friendly pet level-up ability trigger"""
+        trigger1 = AnyTrigger(
+            [
+                FriendlyTrigger(EventType.LEVEL_UP),
+                SelfTrigger(EventType.LEVEL_UP),
+            ]
+        )
+        trigger2 = AnyTrigger(
+            [
+                SelfTrigger(EventType.LEVEL_UP),
+                FriendlyTrigger(EventType.LEVEL_UP),
+            ]
+        )
+        trigger3 = AnyTrigger(
+            [
+                FriendlyTrigger(TypeTrigger(EventType.LEVEL_UP)),
+                SelfTrigger(EventType.LEVEL_UP),
+            ]
+        )
+
+        for trigger in (trigger1, trigger2, trigger3):
+            # No pet, no teams
+            event = Event(EventType.LEVEL_UP)
+            self.assertFalse(trigger.is_triggered(event, self.pet1))
+            # no team
+            event.pet = self.pet1
+            self.assertTrue(trigger.is_triggered(event, self.pet1))
+            self.assertFalse(trigger.is_triggered(event, self.pet2))
+            # singe team
+            event.teams = [[self.pet1, self.pet2]]
+            self.assertTrue(trigger.is_triggered(event, self.pet1))
+            self.assertTrue(trigger.is_triggered(event, self.pet2))
+            # two teams
+            event.teams.append([self.pet3, self.pet4])
+            self.assertTrue(trigger.is_triggered(event, self.pet1))
+            self.assertTrue(trigger.is_triggered(event, self.pet2))
+            self.assertFalse(trigger.is_triggered(event, self.pet3))
+            self.assertFalse(trigger.is_triggered(event, self.pet4))
+
+    def test_two_friends_faint(self):
+        """Test vulture Two friends faint ability trigger"""
+        trigger = CountNTrigger(FriendlyTrigger(EventType.FAINT), n=2)
+
+        # No pet, no teams
+        event = Event(EventType.FAINT, self.pet1)
+        self.assertFalse(trigger.is_triggered(event, self.pet1))
+        self.assertFalse(trigger.is_triggered(event, self.pet1))
+        # Only friendly team
+        event.teams = [[self.pet1, self.pet2]]
+        self.assertFalse(trigger.is_triggered(event, self.pet1))
+        self.assertFalse(trigger.is_triggered(event, self.pet1))
+        event.pet = self.pet2
+        self.assertFalse(trigger.is_triggered(event, self.pet1))
+        self.assertTrue(trigger.is_triggered(event, self.pet1))
+        # friendly + enemy team
+        event.pet = self.pet1
+        event.teams = [[self.pet1, self.pet2], [self.pet3, self.pet4]]
+        self.assertFalse(trigger.is_triggered(event, self.pet2))
+        self.assertTrue(trigger.is_triggered(event, self.pet2))
+        self.assertFalse(trigger.is_triggered(event, self.pet3))
+        self.assertFalse(trigger.is_triggered(event, self.pet3))

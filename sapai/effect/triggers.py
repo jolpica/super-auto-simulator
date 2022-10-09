@@ -121,7 +121,7 @@ class CountNTrigger(ModifierTrigger):
     def __init__(
         self,
         trigger: Trigger,
-        n: int = 3,
+        n: int = 2,
         reset_event: EventType = EventType.START_OF_TURN,
     ):
         super().__init__(trigger)
