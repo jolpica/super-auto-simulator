@@ -5,10 +5,10 @@ from sapai.effect.triggers import (
     AllTrigger,
     AlwaysTrigger,
     AnyTrigger,
-    CountNTrigger,
+    CountTrigger,
     EnemyTrigger,
     FriendlyTrigger,
-    LimitedTrigger,
+    LimitTrigger,
     ModifierTrigger,
     SelfTrigger,
     Trigger,
@@ -18,6 +18,276 @@ from sapai.effect.triggers import (
 from sapai.effect.events import Event, EventType
 from sapai.pets import Pet
 from sapai.teams import Team
+
+
+class TriggerFactoryTestCase(TestCase):
+    def test_trigger_to_dict(self):
+        trigger_dict = {"op": False}
+        self.assertEqual(Trigger().to_dict(), trigger_dict)
+        trigger_dict = {"op": True}
+        self.assertEqual(AlwaysTrigger().to_dict(), trigger_dict)
+
+    def test_trigger_from_dict(self):
+        trigger_dict = {"op": False}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), Trigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {"op": True}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AlwaysTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+    def test_multi_trigger_to_dict(self):
+        sub_triggers = [Trigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
+        sub_triggers = sorted(sub_triggers)
+        sub_triggers_dict = [t.to_dict() for t in sub_triggers]
+
+        trigger_dict = {"triggers": []}
+        self.assertEqual(MultiTrigger([]).to_dict(), trigger_dict)
+        trigger_dict = {"triggers": sub_triggers_dict}
+        self.assertEqual(MultiTrigger(sub_triggers).to_dict(), trigger_dict)
+        trigger_dict = {"op": "ANY", "triggers": []}
+        self.assertEqual(AnyTrigger([]).to_dict(), trigger_dict)
+        trigger_dict = {"op": "ANY", "triggers": sub_triggers_dict}
+        self.assertEqual(AnyTrigger(sub_triggers).to_dict(), trigger_dict)
+        trigger_dict = {"op": "ALL", "triggers": []}
+        self.assertEqual(AllTrigger([]).to_dict(), trigger_dict)
+        trigger_dict = {"op": "ALL", "triggers": sub_triggers_dict}
+        self.assertEqual(AllTrigger(sub_triggers).to_dict(), trigger_dict)
+
+        # Assert order is irrelavent
+        trigger1 = AllTrigger(sub_triggers)
+        trigger2 = AllTrigger(sub_triggers[::-1])
+        trigger_dict = {"op": "ALL", "triggers": sub_triggers_dict}
+        self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
+
+    def test_multi_trigger_from_dict(self):
+        sub_triggers = [Trigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
+        sub_triggers = sorted(sub_triggers)
+        sub_triggers_dict = [t.to_dict() for t in sub_triggers]
+
+        # Throw errors when no op specified
+        trigger_dict = {"triggers": []}
+        with self.assertRaises(ValueError):
+            Trigger.from_dict(trigger_dict)
+        trigger_dict = {"triggers": sub_triggers_dict}
+        with self.assertRaises(ValueError):
+            Trigger.from_dict(trigger_dict)
+
+        trigger_dict = {"op": "ANY", "triggers": []}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AnyTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {"op": "ANY", "triggers": sub_triggers_dict}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AnyTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {"op": "ALL", "triggers": []}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AllTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {"op": "ALL", "triggers": sub_triggers_dict}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AllTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+        # Assert order is irrelavent
+        trigger_dict = {"op": "ALL", "triggers": sub_triggers_dict}
+        trigger1 = Trigger.from_dict(trigger_dict)
+        trigger_dict = {"op": "ALL", "triggers": sub_triggers_dict[::-1]}
+        trigger2 = Trigger.from_dict(trigger_dict)
+        self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
+        self.assertEqual(
+            trigger1._triggers[0].to_dict(), trigger2._triggers[0].to_dict()
+        )
+        print()
+        print(trigger.to_dict())
+        print(trigger_dict)
+
+    def test_type_trigger_to_dict(self):
+        trigger_dict = {"event": "NONE"}
+        self.assertEqual(TypeTrigger(EventType.NONE).to_dict(), trigger_dict)
+        trigger_dict = {"event": "END_OF_TURN"}
+        self.assertEqual(TypeTrigger(EventType.END_OF_TURN).to_dict(), trigger_dict)
+        # Ensure alias END_TURN is the same as END_OF_TURN
+        self.assertEqual(
+            TypeTrigger(EventType.END_TURN).to_dict(),
+            TypeTrigger(EventType.END_OF_TURN).to_dict(),
+        )
+
+    def test_type_trigger_from_dict(self):
+        trigger_dict = {"event": "NONE"}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), TypeTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {"event": "END_OF_TURN"}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), TypeTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+    def test_modifier_trigger_to_dict(self):
+        trigger_dict = {"event": "NONE", "modifiers": []}
+        self.assertEqual(ModifierTrigger(EventType.NONE).to_dict(), trigger_dict)
+        # Limit trigger
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "limit", "n": 3, "reset_event": "START_OF_TURN"}],
+        }
+        trigger = LimitTrigger(EventType.NONE, n=3, reset_event=EventType.START_OF_TURN)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger = LimitTrigger(EventType.NONE, n=5, reset_event=EventType.NONE)
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "limit", "n": 5, "reset_event": "NONE"}],
+        }
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Count Trigger
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "count", "n": 3, "reset_event": "START_OF_TURN"}],
+        }
+        trigger = CountTrigger(EventType.NONE, n=3, reset_event=EventType.START_OF_TURN)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger = CountTrigger(EventType.NONE, n=5, reset_event=EventType.NONE)
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "count", "n": 5, "reset_event": "NONE"}],
+        }
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Self Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "self"}]}
+        trigger = SelfTrigger(EventType.NONE)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Friendly Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "friendly"}]}
+        trigger = FriendlyTrigger(EventType.NONE)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Enemy Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "enemy"}]}
+        trigger = EnemyTrigger(EventType.NONE)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Ahead Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "ahead"}]}
+        trigger = AheadTrigger(EventType.NONE)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+    def test_modifier_trigger_from_dict(self):
+        # Type trigger when given empty list of modifiers
+        trigger_dict = {"event": "NONE", "modifiers": []}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), TypeTrigger)
+        del trigger_dict["modifiers"]
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+        # Limit trigger
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "limit", "n": 3, "reset_event": "START_OF_TURN"}],
+        }
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), LimitTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "limit", "n": 5, "reset_event": "NONE"}],
+        }
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), LimitTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Count Trigger
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "count", "n": 3, "reset_event": "START_OF_TURN"}],
+        }
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), CountTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "count", "n": 5, "reset_event": "NONE"}],
+        }
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), CountTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Self Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "self"}]}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), SelfTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Friendly Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "friendly"}]}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), FriendlyTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Enemy Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "enemy"}]}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), EnemyTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+        # Ahead Trigger
+        trigger_dict = {"event": "NONE", "modifiers": [{"type": "ahead"}]}
+        trigger = Trigger.from_dict(trigger_dict)
+        self.assertEqual(type(trigger), AheadTrigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+    def test_nested_trigger_to_dict(self):
+        """Test nesting of triggers"""
+        modi_trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "ahead"}, {"type": "friendly"}],
+        }
+        modi_trigger = FriendlyTrigger(AheadTrigger(EventType.NONE))
+        self.assertEqual(modi_trigger.to_dict(), modi_trigger_dict)
+        multi_trigger_dict = {
+            "op": "ALL",
+            "triggers": [modi_trigger_dict],
+        }
+        multi_trigger = AllTrigger([modi_trigger])
+        self.assertEqual(multi_trigger.to_dict(), multi_trigger_dict)
+        trigger_dict = {
+            "op": "ALL",
+            "triggers": [modi_trigger_dict],
+            "modifiers": [{"type": "self"}],
+        }
+        trigger = SelfTrigger(multi_trigger)
+        self.assertEqual(trigger.to_dict(), trigger_dict)
+
+    def test_nested_trigger_from_dict(self):
+        """Test nesting of triggers"""
+        modi_trigger_dict = {
+            "event": "NONE",
+            "modifiers": [{"type": "ahead"}, {"type": "friendly"}],
+        }
+        trigger1 = Trigger.from_dict(modi_trigger_dict)
+        modi_trigger_dict["modifiers"] = modi_trigger_dict["modifiers"][::-1]
+        trigger2 = Trigger.from_dict(modi_trigger_dict)
+        self.assertEqual(type(trigger1), type(trigger2))
+        self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
+
+        multi_trigger_dict = {
+            "op": "ALL",
+            "triggers": [modi_trigger_dict, {"event": "START_OF_BATTLE"}],
+        }
+        trigger1 = Trigger.from_dict(multi_trigger_dict)
+        multi_trigger_dict["triggers"] = multi_trigger_dict["triggers"][::-1]
+        trigger2 = Trigger.from_dict(multi_trigger_dict)
+        self.assertEqual(type(trigger1), type(trigger2))
+        self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
+
+        multi_trigger_dict = {
+            "op": "ALL",
+            "triggers": [modi_trigger_dict, {"event": "START_OF_BATTLE"}],
+            "modifiers": [{"type": "self"}, {"type": "ahead"}],
+        }
+        trigger1 = Trigger.from_dict(multi_trigger_dict)
+        multi_trigger_dict["triggers"][0]["modifiers"] = modi_trigger_dict["modifiers"][
+            ::-1
+        ]
+        multi_trigger_dict["triggers"] = multi_trigger_dict["triggers"][::-1]
+        multi_trigger_dict["modifiers"] = multi_trigger_dict["modifiers"][::-1]
+        trigger2 = Trigger.from_dict(multi_trigger_dict)
+        self.assertEqual(type(trigger1), type(trigger2))
+        self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
 
 
 class TriggerTestCase(TestCase):
@@ -169,10 +439,10 @@ class TriggerTestCase(TestCase):
         trigger = ModifierTrigger(AlwaysTrigger())
         self.assertTrue(trigger.is_triggered(None))
 
-    def test_limited_trigger(self):
+    def test_limit_trigger(self):
         """Limited Trigger only triggers a maximum amount of times"""
-        trigger = LimitedTrigger(
-            AlwaysTrigger(), limit=3, reset_event=EventType.START_OF_TURN
+        trigger = LimitTrigger(
+            AlwaysTrigger(), n=3, reset_event=EventType.START_OF_TURN
         )
         count = 0
         for i in range(5):
@@ -180,8 +450,8 @@ class TriggerTestCase(TestCase):
                 count += 1
         self.assertEqual(count, 3)
         # Test trigger that sometimes is false
-        trigger = LimitedTrigger(
-            TypeTrigger(EventType.NONE), limit=3, reset_event=EventType.START_OF_TURN
+        trigger = LimitTrigger(
+            TypeTrigger(EventType.NONE), n=3, reset_event=EventType.START_OF_TURN
         )
         count = 0
         for i in range(5):
@@ -191,8 +461,8 @@ class TriggerTestCase(TestCase):
                 count += 1
         self.assertEqual(count, 3)
         # Test trigger can reset
-        trigger = LimitedTrigger(
-            TypeTrigger(EventType.NONE), limit=1, reset_event=EventType.START_OF_TURN
+        trigger = LimitTrigger(
+            TypeTrigger(EventType.NONE), n=1, reset_event=EventType.START_OF_TURN
         )
         count = 0
         for i in range(20):
@@ -204,22 +474,27 @@ class TriggerTestCase(TestCase):
                 count += 1
         self.assertEqual(count, 4)
 
-    def test_count_n_trigger(self):
+        with self.assertRaises(TypeError):
+            LimitTrigger(EventType.NONE, n=1, reset_event="NONE")
+        with self.assertRaises(TypeError):
+            LimitTrigger(EventType.NONE, n=1, reset_event=None)
+
+    def test_count_trigger(self):
         """count Trigger only triggers a every n times"""
-        trigger = CountNTrigger(AlwaysTrigger(), n=2)
+        trigger = CountTrigger(AlwaysTrigger(), n=2)
         count = 0
         for i in range(5):
             if trigger.is_triggered(self.none_event):
                 count += 1
         self.assertEqual(count, 2)
-        trigger = CountNTrigger(AlwaysTrigger(), n=3)
+        trigger = CountTrigger(AlwaysTrigger(), n=3)
         count = 0
         for i in range(5):
             if trigger.is_triggered(self.none_event):
                 count += 1
         self.assertEqual(count, 1)
         # Test trigger that sometimes is false
-        trigger = CountNTrigger(TypeTrigger(EventType.NONE), n=2)
+        trigger = CountTrigger(TypeTrigger(EventType.NONE), n=2)
         count = 0
         for i in range(5):
             if trigger.is_triggered(self.none_event):
@@ -228,7 +503,7 @@ class TriggerTestCase(TestCase):
                 count += 1
         self.assertEqual(count, 2)
         # Test trigger can reset
-        trigger = CountNTrigger(
+        trigger = CountTrigger(
             TypeTrigger(EventType.NONE), n=3, reset_event=EventType.START_OF_TURN
         )
         self.assertFalse(trigger.is_triggered(self.none_event))
@@ -239,6 +514,11 @@ class TriggerTestCase(TestCase):
         self.assertFalse(trigger.is_triggered(self.none_event))
         self.assertFalse(trigger.is_triggered(self.none_event))
         self.assertTrue(trigger.is_triggered(self.none_event))
+
+        with self.assertRaises(TypeError):
+            CountTrigger(EventType.NONE, n=1, reset_event="NONE")
+        with self.assertRaises(TypeError):
+            CountTrigger(EventType.NONE, n=1, reset_event=None)
 
     def test_self_trigger(self):
         """self Trigger tests"""
@@ -440,7 +720,7 @@ class CompoundTriggerTestCase(TestCase):
 
     def test_two_friends_faint(self):
         """Test vulture Two friends faint ability trigger"""
-        trigger = CountNTrigger(FriendlyTrigger(EventType.FAINT), n=2)
+        trigger = CountTrigger(FriendlyTrigger(EventType.FAINT), n=2)
 
         # No pet, no teams
         event = Event(EventType.FAINT, self.pet1)
