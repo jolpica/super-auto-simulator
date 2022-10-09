@@ -22,11 +22,25 @@ class Trigger:
         return False
 
 
-class AnyTrigger(Trigger):
-    """Triggers if any of the given triggers are triggered"""
+class AlwaysTrigger(Trigger):
+    """Always triggers, regardless of event or owner"""
+
+    def is_triggered(self, event: Event, owner: Pet = None):
+        return True
+
+
+class MultiTrigger(Trigger):
+    """Base class for a trigger that takes a list of triggers"""
 
     def __init__(self, triggers: List[Trigger]):
+        for t in triggers:
+            if not isinstance(t, Trigger):
+                raise TypeError("triggers must all be Trigger instances")
         self._triggers = triggers
+
+
+class AnyTrigger(MultiTrigger):
+    """Triggers if any of the given triggers are triggered"""
 
     def is_triggered(self, event: Event, owner: Pet = None):
         for trigger in self._triggers:
@@ -35,21 +49,18 @@ class AnyTrigger(Trigger):
         return False
 
 
-class AllTrigger(Trigger):
+class AllTrigger(MultiTrigger):
     """Triggers if all of the given triggers are triggered"""
-
-    def __init__(self, triggers: List[Trigger]):
-        self._triggers = triggers
 
     def is_triggered(self, event: Event, owner: Pet = None):
         for trigger in self._triggers:
             if not trigger.is_triggered(event, owner):
                 return False
-        return True
+        return len(self._triggers) > 0
 
 
 class LimitedTrigger(Trigger):
-    """Only triggers a maximum number of time between events"""
+    """Only triggers a maximum number of times between events"""
 
     def __init__(
         self,
@@ -69,7 +80,13 @@ class LimitedTrigger(Trigger):
         if event.type is self._reset_event:
             self.reset_limit()
 
-        return self._trigger.is_triggered(event, owner)
+        if self.remaining_limit <= 0:
+            return False
+
+        is_triggered = self._trigger.is_triggered(event, owner)
+        if is_triggered:
+            self.remaining_limit -= 1
+        return is_triggered
 
 
 class CountNTrigger(Trigger):
@@ -106,7 +123,7 @@ class TypeTrigger(Trigger):
         self._event_type = event_type
 
     def is_triggered(self, event: Event, owner: Pet = None):
-        return event.type is self._event_type
+        return event and event.type is self._event_type
 
 
 class SelfTrigger(TypeTrigger):
