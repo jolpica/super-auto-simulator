@@ -1,4 +1,5 @@
-from typing import List, Union
+from collections import namedtuple
+from typing import List, NamedTuple, Union
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
 
@@ -40,7 +41,7 @@ class Trigger:
 
         # Create base trigger based on "op" or "event" key
         if trigger_dict.get("event") in [et.name for et in EventType]:
-            trigger = TypeTrigger(EventType[trigger_dict]["event"])
+            trigger = TypeTrigger(EventType[trigger_dict["event"]])
         elif trigger_dict.get("op") in ("ANY", "ALL") and "triggers" in trigger_dict:
             nested_triggers = [cls.from_dict(t) for t in trigger_dict["triggers"]]
             if trigger_dict["op"] == "ANY":
@@ -58,7 +59,9 @@ class Trigger:
         # Add modifiers to trigger
         if trigger_dict.get("modifiers"):
             # Sort so generated trigger does not rely on order
-            modifiers = sorted(trigger_dict["modifiers"])
+            modifiers = sorted(
+                trigger_dict["modifiers"], key=lambda d: tuple(d.items())
+            )
             for modifier_dict in modifiers:
                 trigger = cls.add_modifier_from_dict(trigger, modifier_dict)
 
@@ -87,12 +90,17 @@ class Trigger:
             elif modifier_dict["type"] == "count":
                 modifier_trigger = CountTrigger
             return modifier_trigger(
-                trigger, n=modifier_dict["n"], reset_event=modifier_dict["reset_event"]
+                trigger,
+                n=modifier_dict["n"],
+                reset_event=EventType[modifier_dict["reset_event"]],
             )
         else:
             raise ValueError(
                 f"Unsupported or badly formatted modifier: {modifier_dict}"
             )
+
+    def __lt__(self, other):
+        return repr(self.to_dict()) < repr(other.to_dict())
 
     def __repr__(self):
         return f"Trigger<{self.to_dict()}>"
@@ -115,7 +123,8 @@ class MultiTrigger(Trigger):
         for t in triggers:
             if not isinstance(t, Trigger):
                 raise TypeError("triggers must all be Trigger instances")
-        self._triggers = triggers
+        # Sort so order is irrelevant
+        self._triggers = sorted(triggers)
 
     def to_dict(self):
         return {
@@ -197,6 +206,8 @@ class LimitTrigger(ModifierTrigger):
         n=3,
         reset_event: EventType = EventType.START_OF_TURN,
     ):
+        if not isinstance(reset_event, EventType):
+            raise TypeError(f"reset_event must be of type EventType")
         super().__init__(trigger)
         self._reset_event = reset_event
         self.n = n
@@ -237,6 +248,8 @@ class CountTrigger(ModifierTrigger):
         n: int = 2,
         reset_event: EventType = EventType.START_OF_TURN,
     ):
+        if not isinstance(reset_event, EventType):
+            raise TypeError(f"reset_event must be of type EventType")
         super().__init__(trigger)
         self._reset_event = reset_event
         self.n = n
