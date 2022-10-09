@@ -1,0 +1,15 @@
+description = "Simulator for Super Auto Pets"
+authors = ["JorVLP <47005135+JorVLP@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+
+
+[build-system]
+requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry.core.masonry.api"
