@@ -1,6 +1,11 @@
 #%%
+try:
+    import torch
 
-import os, json, zlib, itertools, torch
+    _has_torch = True
+except:
+    _has_torch = False
+import os, json, zlib, itertools
 import numpy as np
 from sapai import Player
 from sapai.battle import Battle

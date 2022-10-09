@@ -1,19 +1,26 @@
 [tool.poetry]
-name = "sapai"
+name = "super-auto-simulator"
 version = "0.1.0"
-description = "Super auto pets engine built with reinforment learning training in mind"
-authors = []
+description = "Simulator for Super Auto Pets"
+authors = ["JorVLP <47005135+JorVLP@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
 numpy = "^1.23.3"
-keras = "^2.10.0"
-torch = "^1.12.1"
-graphviz = "^0.20.1"
 
-[tool.poetry.dev-dependencies]
-black = "22.6.0"
+# optional dependencies
+torch = { version = "^1.12.1", optional = true }
+graphviz = { version = "^0.20.1", optional = true }
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+
+[tool.poetry.extras]
+torch = ["torch"]
+graphviz = ["graphviz"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"

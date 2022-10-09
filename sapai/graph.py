@@ -1,6 +1,10 @@
 #%%
+try:
+    from graphviz import Digraph
 
-from graphviz import Digraph
+    _has_graphviz = True
+except ImportError:
+    _has_graphviz = False
 
 
 def html_table(

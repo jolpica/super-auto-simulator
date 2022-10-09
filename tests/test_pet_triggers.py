@@ -1,7 +1,6 @@
 #%%
 import unittest
 import numpy as np
-from torch import seed
 
 from sapai import *
 from sapai.compress import compress, decompress
