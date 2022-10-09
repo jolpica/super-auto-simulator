@@ -1,10 +1,13 @@
 [tool.poetry]
-name = "super-auto-simulator"
+name = "superautosim"
 version = "0.1.0"
 description = "Simulator for Super Auto Pets"
 authors = ["JorVLP <47005135+JorVLP@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [
+    { include = "sapai" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"

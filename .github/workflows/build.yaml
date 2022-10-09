@@ -3,30 +3,30 @@ name: build
 on:
   pull_request:
     branches:
-      - "*"
+      - "main"
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.6
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.6
+        python-version: "3.9"
 
     - name: Install dependencies
-      run: pip install wheel setuptools
+      run: pip install wheel setuptools poetry
 
     - name: Build wheel
-      run: python setup.py bdist_wheel
+      run: python -m poetry build
 
     - name: Upload Python wheel
       uses: actions/upload-artifact@v2
       with:
         name: Python wheel
-        path: ${{github.workspace}}/dist/sapai-*.whl
+        path: ${{github.workspace}}/dist/superautosim-*.whl
         if-no-files-found: error
 
   test:
@@ -35,8 +35,8 @@ jobs:
     strategy:
       max-parallel: 10
       matrix:
-        python-version: [3.6]
-        os: [ubuntu-18.04, windows-2019, macos-11]
+        python-version: [3.9]
+        os: [ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v2
