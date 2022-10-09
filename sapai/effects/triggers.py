@@ -114,6 +114,5 @@ class TriggerType(Enum):
     ENEMY_LEVEL_UP = auto()  # part 2 of jellyfish
     END_OF_TURN = auto()
     END_TURN = END_OF_TURN  # Is there a difference?
-
     FOOD_USED = auto()  # Cat ability
     FRIEND_AHEAD_USES_ABILITY = auto()  # Tiger ability
