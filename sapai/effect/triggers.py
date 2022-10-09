@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import List
+from typing import List, Union
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
 
@@ -59,7 +59,33 @@ class AllTrigger(MultiTrigger):
         return len(self._triggers) > 0
 
 
-class LimitedTrigger(Trigger):
+class TypeTrigger(Trigger):
+    """Trigger based on a given trigger event type"""
+
+    def __init__(self, event_type: EventType):
+        self._event_type = event_type
+
+    def is_triggered(self, event: Event, owner: Pet = None):
+        return event and event.type is self._event_type
+
+
+class ModifierTrigger(Trigger):
+    """Base class for a trigger that modifies another trigger"""
+
+    def __init__(self, trigger: Union[Trigger, EventType]):
+        if isinstance(trigger, EventType):
+            # Create a type trigger
+            self._trigger = TypeTrigger(trigger)
+        elif isinstance(trigger, Trigger):
+            self._trigger = trigger
+        else:
+            raise ValueError("trigger must be of type Trigger or EventType")
+
+    def is_triggered(self, event: Event, owner: Pet = None):
+        return self._trigger.is_triggered(event, owner)
+
+
+class LimitedTrigger(ModifierTrigger):
     """Only triggers a maximum number of times between events"""
 
     def __init__(
@@ -68,7 +94,7 @@ class LimitedTrigger(Trigger):
         limit=3,
         reset_event: EventType = EventType.START_OF_TURN,
     ):
-        self._trigger = trigger
+        super().__init__(trigger)
         self._reset_event = reset_event
         self.limit = limit
         self.remaining_limit = self.limit
@@ -83,31 +109,34 @@ class LimitedTrigger(Trigger):
         if self.remaining_limit <= 0:
             return False
 
-        is_triggered = self._trigger.is_triggered(event, owner)
+        is_triggered = super().is_triggered(event, owner)
         if is_triggered:
             self.remaining_limit -= 1
         return is_triggered
 
 
-class CountNTrigger(Trigger):
+class CountNTrigger(ModifierTrigger):
     """Only triggers once every N activations of the given trigger"""
 
     def __init__(
-        self, trigger: Trigger, n=3, reset_event: EventType = EventType.START_OF_TURN
+        self,
+        trigger: Trigger,
+        n: int = 3,
+        reset_event: EventType = EventType.START_OF_TURN,
     ):
-        self._trigger = trigger
+        super().__init__(trigger)
         self._reset_event = reset_event
         self.n = n
         self.count = 0
 
     def reset_count(self):
-        self.count = self.n
+        self.count = 0
 
     def is_triggered(self, event: Event, owner: Pet = None):
         if event.type is self._reset_event:
             self.reset_count()
 
-        if self._trigger.is_triggered(event, owner):
+        if super().is_triggered(event, owner):
             self.count += 1
 
             if self.count >= self.n:
@@ -116,18 +145,8 @@ class CountNTrigger(Trigger):
         return False
 
 
-class TypeTrigger(Trigger):
-    """Trigger based on a given trigger event type"""
-
-    def __init__(self, event_type: EventType):
-        self._event_type = event_type
-
-    def is_triggered(self, event: Event, owner: Pet = None):
-        return event and event.type is self._event_type
-
-
-class SelfTrigger(TypeTrigger):
-    """Trigger on type IF current pet is triggering pet"""
+class SelfTrigger(ModifierTrigger):
+    """Trigger on type IF event pet is owner pet"""
 
     def is_triggered(self, event: Event, owner: Pet = None):
         if not super().is_triggered(event, owner):
@@ -135,8 +154,8 @@ class SelfTrigger(TypeTrigger):
         return None not in (owner, event.pet) and owner is event.pet
 
 
-class FriendlyTrigger(TypeTrigger):
-    """Trigger on type IF triggering pet is a non-owner friendly pet"""
+class FriendlyTrigger(ModifierTrigger):
+    """Trigger on type IF event pet is a *non-owner* friendly pet"""
 
     def is_triggered(self, event: Event, owner: Pet = None):
         if not super().is_triggered(event, owner):
@@ -155,24 +174,28 @@ class FriendlyTrigger(TypeTrigger):
         )
 
 
-class EnemyTrigger(TypeTrigger):
-    """Trigger on type IF triggering pet is an enemy pet"""
+class EnemyTrigger(ModifierTrigger):
+    """Trigger on type IF event pet is an enemy pet"""
 
     def is_triggered(self, event: Event, owner: Pet = None):
         if not super().is_triggered(event, owner):
             return False
 
-        enemy_team = None
-        for team in event.teams:
-            if owner not in team:
-                enemy_team = team
-                break
+        if len(event.teams) < 2:
+            return False
+        else:  # 2 teams
+            if owner in event.teams[0]:
+                _, enemy_team = event.teams
+            elif owner in event.teams[1]:
+                enemy_team, _ = event.teams
+            else:
+                raise ValueError("Trigger owner must be in at least 1 event team")
 
         return None not in (enemy_team, owner, event.pet) and event.pet in enemy_team
 
 
-class AheadTrigger(TypeTrigger):
-    """Trigger on type IF triggering pet is ahead"""
+class AheadTrigger(ModifierTrigger):
+    """Trigger on type IF event pet is ahead"""
 
     def is_triggered(self, event: Event, owner: Pet = None):
         if not super().is_triggered(event, owner):
@@ -182,6 +205,7 @@ class AheadTrigger(TypeTrigger):
             return False
         elif len(event.teams) == 1:
             friendly_team = event.teams[0]
+            enemy_team = []
         else:  # 2 teams
             if owner in event.teams[0]:
                 friendly_team, enemy_team = event.teams
@@ -196,10 +220,3 @@ class AheadTrigger(TypeTrigger):
                 return pet_ahead is event.pet
 
         return False
-
-
-class TriggerCondition(Enum):
-    NONE = auto()
-    SELF = auto()
-    FRIEND = auto()
-    ENEMY = auto()
