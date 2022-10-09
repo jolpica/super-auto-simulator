@@ -1,10 +1,16 @@
 from unittest import TestCase
 from unittest.mock import Mock
 from sapai.effect.triggers import (
+    AheadTrigger,
     AllTrigger,
     AlwaysTrigger,
     AnyTrigger,
+    CountNTrigger,
+    EnemyTrigger,
+    FriendlyTrigger,
     LimitedTrigger,
+    ModifierTrigger,
+    SelfTrigger,
     Trigger,
     TypeTrigger,
     MultiTrigger,
@@ -18,11 +24,30 @@ class TriggerTestCase(TestCase):
     def setUp(self):
         self.pet1 = Mock(Pet)
         self.pet2 = Mock(Pet)
+        self.pet3 = Mock(Pet)
+        self.pet4 = Mock(Pet)
+        self.pet5 = Mock(Pet)
         self.none_event = Event(EventType.NONE)
-        self.start_of_battle_event = Event(
-            EventType.START_OF_BATTLE, self.pet1, in_battle=True
+        self.start_of_turn_event = Event(
+            EventType.START_OF_TURN,
+            self.pet1,
+            teams=[[self.pet1, self.pet2]],
         )
-        self.start_of_turn_event = Event(EventType.START_OF_TURN, in_battle=False)
+        self.end_of_turn_event = Event(
+            EventType.END_OF_TURN,
+            self.pet2,
+            teams=[[self.pet1, self.pet2, self.pet3, self.pet4]],
+        )
+        self.start_of_battle_event = Event(
+            EventType.START_OF_BATTLE,
+            self.pet1,
+            teams=[[self.pet1, self.pet2], [self.pet3, self.pet4]],
+        )
+        self.start_of_battle_pet3_event = Event(
+            EventType.START_OF_BATTLE,
+            self.pet3,
+            teams=[[self.pet1, self.pet2], [self.pet3, self.pet4]],
+        )
 
     def test_trigger(self):
         """Default trigger is false"""
@@ -103,6 +128,47 @@ class TriggerTestCase(TestCase):
         with self.assertRaises(TypeError):
             trigger = AllTrigger([None])
 
+    def test_type_trigger(self):
+        """Type Trigger is true when event type matches"""
+        trigger = TypeTrigger(EventType.START_OF_BATTLE)
+        # False when event doesn't match
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        # True when event matches
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+
+        # Test with none values
+        trigger = TypeTrigger(EventType.START_OF_BATTLE)
+        self.assertFalse(trigger.is_triggered(None))
+        self.assertFalse(trigger.is_triggered(None, self.pet1))
+
+        trigger = TypeTrigger(None)
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(None))
+        self.assertFalse(trigger.is_triggered(None, self.pet1))
+
+    def test_modifier_trigger(self):
+        """modifier Trigger validates input"""
+        # Error on invalid input
+        with self.assertRaises(ValueError):
+            ModifierTrigger(None)
+        # TypeTrigger when EventType given
+        trigger = ModifierTrigger(EventType.START_OF_BATTLE)
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
+
+        # Given trigger works as expected
+        trigger = ModifierTrigger(Trigger())
+        self.assertFalse(trigger.is_triggered(None))
+        trigger = ModifierTrigger(AlwaysTrigger())
+        self.assertTrue(trigger.is_triggered(None))
+
     def test_limited_trigger(self):
         """Limited Trigger only triggers a maximum amount of times"""
         trigger = LimitedTrigger(
@@ -138,28 +204,182 @@ class TriggerTestCase(TestCase):
                 count += 1
         self.assertEqual(count, 4)
 
-    def test_type_trigger(self):
-        """Type Trigger is true when event type matches"""
-        trigger = TypeTrigger(EventType.START_OF_BATTLE)
-        # False when event doesn't match
+    def test_count_n_trigger(self):
+        """count Trigger only triggers a every n times"""
+        trigger = CountNTrigger(AlwaysTrigger(), n=2)
+        count = 0
+        for i in range(5):
+            if trigger.is_triggered(self.none_event):
+                count += 1
+        self.assertEqual(count, 2)
+        trigger = CountNTrigger(AlwaysTrigger(), n=3)
+        count = 0
+        for i in range(5):
+            if trigger.is_triggered(self.none_event):
+                count += 1
+        self.assertEqual(count, 1)
+        # Test trigger that sometimes is false
+        trigger = CountNTrigger(TypeTrigger(EventType.NONE), n=2)
+        count = 0
+        for i in range(5):
+            if trigger.is_triggered(self.none_event):
+                count += 1
+            if trigger.is_triggered(self.start_of_battle_event):
+                count += 1
+        self.assertEqual(count, 2)
+        # Test trigger can reset
+        trigger = CountNTrigger(
+            TypeTrigger(EventType.NONE), n=3, reset_event=EventType.START_OF_TURN
+        )
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event))
+
+    def test_self_trigger(self):
+        """self Trigger tests"""
+        # False when no event pet is given
+        trigger = SelfTrigger(EventType.NONE)
         self.assertFalse(trigger.is_triggered(self.none_event))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
-        # True when event matches
-        self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
+        # When only 1 team is given
+        trigger = SelfTrigger(EventType.START_OF_TURN)
+        self.assertTrue(trigger.is_triggered(self.start_of_turn_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
+        # When 2 teams are given
+        trigger = SelfTrigger(EventType.START_OF_BATTLE)
         self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet1))
-        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertTrue(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet3)
+        )
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet1)
+        )
 
-    def test_type_trigger_none(self):
-        """Type Trigger with None values"""
-        trigger = TypeTrigger(EventType.START_OF_BATTLE)
-        self.assertFalse(trigger.is_triggered(None))
-        self.assertFalse(trigger.is_triggered(None, self.pet1))
-
-        trigger = TypeTrigger(None)
+    def test_friendly_trigger(self):
+        """friendly Trigger does NOT trigger on self, but does trigger on friends"""
+        # False when no event pet is given
+        trigger = FriendlyTrigger(EventType.NONE)
         self.assertFalse(trigger.is_triggered(self.none_event))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
-        self.assertFalse(trigger.is_triggered(self.start_of_battle_event))
+        # When only 1 team is given
+        trigger = FriendlyTrigger(EventType.START_OF_TURN)
+        # False when pet is self (friendly pet is not trigger pet)
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet1))
+        self.assertTrue(trigger.is_triggered(self.start_of_turn_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        # When 2 teams are given
+        trigger = FriendlyTrigger(EventType.START_OF_BATTLE)
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet3)
+        )
+        self.assertTrue(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet4)
+        )
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet4))
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet1)
+        )
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet2)
+        )
+
+    def test_enemy_trigger(self):
+        """enemy Trigger triggers on enemy team"""
+        # False when no event pet is given
+        trigger = EnemyTrigger(EventType.NONE)
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        # When only 1 team is given (always false)
+        trigger = EnemyTrigger(EventType.START_OF_TURN)
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet4))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet5))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        # When 2 teams are given
+        trigger = EnemyTrigger(EventType.START_OF_BATTLE)
+        with self.assertRaises(ValueError):
+            trigger.is_triggered(self.start_of_battle_event, self.pet5)
+        self.assertTrue(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet1)
+        )
+        self.assertTrue(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet2)
+        )
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet4))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
-        self.assertFalse(trigger.is_triggered(None))
-        self.assertFalse(trigger.is_triggered(None, self.pet1))
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet3)
+        )
+        self.assertFalse(
+            trigger.is_triggered(self.start_of_battle_pet3_event, self.pet4)
+        )
+
+    def test_ahead_trigger(self):
+        """enemy Trigger triggers on enemy team"""
+        # False when no event pet is given
+        trigger = AheadTrigger(EventType.NONE)
+        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        # When only 1 team is given
+        trigger = AheadTrigger(EventType.END_OF_TURN)  # event pet is pet2
+        self.assertTrue(trigger.is_triggered(self.end_of_turn_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.end_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet4))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
+        trigger = AheadTrigger(EventType.START_OF_TURN)  # event pet is pet1
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet1))
+        self.assertTrue(trigger.is_triggered(self.start_of_turn_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet4))
+        # When 2 teams are given
+        trigger = AheadTrigger(EventType.START_OF_BATTLE)
+        # pet 1 event
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet4))
+        # pet 2 event
+        self.start_of_battle_event.pet = self.pet2
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet4))
+        # pet 3 event
+        self.start_of_battle_event.pet = self.pet3
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet4))
+        # pet 4 event
+        self.start_of_battle_event.pet = self.pet4
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet3))
