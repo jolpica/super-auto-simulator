@@ -1,5 +1,4 @@
-from collections import namedtuple
-from typing import List, NamedTuple, Union
+from typing import List, Union
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
 
@@ -303,11 +302,10 @@ class FriendlyTrigger(ModifierTrigger):
         if not super().is_triggered(event, owner):
             return False
 
-        friendly_team = None
-        for team in event.teams:
-            if owner in team:
-                friendly_team = team
-                break
+        try:
+            friendly_team, _ = event.get_named_teams(owner)
+        except ValueError:
+            return False
 
         return (
             None not in (friendly_team, owner, event.pet)
@@ -355,20 +353,16 @@ class AheadTrigger(ModifierTrigger):
         if not super().is_triggered(event, owner):
             return False
 
-        if len(event.teams) == 0:
+        if len(event.teams) == 0 or owner is None:
             return False
-        elif len(event.teams) == 1:
-            friendly_team = event.teams[0]
-            enemy_team = []
-        else:  # 2 teams
-            if owner in event.teams[0]:
-                friendly_team, enemy_team = event.teams
-            elif owner in event.teams[1]:
-                enemy_team, friendly_team = event.teams
-            else:
-                raise ValueError("Trigger owner must be in at least 1 event team")
 
-        pet_order = friendly_team[::-1] + enemy_team[::1]
+        try:
+            friendly_team, enemy_team = event.get_named_teams(owner)
+        except ValueError:
+            return False
+
+        # Only checking 1 ahead, so first enemy is enough
+        pet_order = friendly_team[::-1] + enemy_team[:1]
         for pet, pet_ahead in zip(pet_order, pet_order[1:]):
             if pet is owner:
                 return pet_ahead is event.pet
