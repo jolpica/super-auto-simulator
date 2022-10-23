@@ -1,9 +1,12 @@
 from dataclasses import dataclass, field
-from enum import Flag, auto()
+from enum import Flag, auto
 from sapai.foods import Food
 from sapai.pets import Pet
 from typing import Tuple
 from .events import Event
+from .target_pools import TargetPool
+from .target_filters import TargetFilter
+from .target_selectors import TargetSelector
 
 
 @dataclass
@@ -17,6 +20,13 @@ class Target:
 
 
 class TargetGenerator:
+    """Generates a target(s)"""
+
+    def __init__(self) -> None:
+        self.possible_targets: TargetPool = None
+        self.target_filter: TargetFilter = None
+        self.target_selector: TargetSelector = None
+
     def get_targets(self, event: Event, amount: int = 1) -> Target:
         return Target(
             pets=self.get_possible_pets(),
@@ -30,35 +40,15 @@ class TargetGenerator:
         return []
 
 
-class RandomTargetGenerator(TargetGenerator):
-    pass
-class LeftTargetGenerator(TargetGenerator):
-    pass
-class HighestHealthTargetGenerator(TargetGenerator):
-    pass
-class HighestAttackTargetGenerator(TargetGenerator):
-    pass
-class HighestStatsTargetGenerator(TargetGenerator):
-    pass
-
-class TargetType(Flag):
-    SELF = auto()
-    FRIENDLY = auto()
-    ENEMY = auto()
-    AHEAD =auto()
-    BEHIND = auto()
-    CURRENT_SHOP_PETS = auto()
-    ALL_SHOP_PETS = auto()
-
-class TargetModifier(Flag):
-    HIGHEST_HEALTH = auto()
-
-
-
-class FriendlyTargetGenerator(TargetGenerator):
-    def get_targets(self, event: Event, amount: int = 1) -> Target:
-        return super().get_targets(event, amount)
-
-    def get_possible_targets(self, event: Event, owner: Pet) -> Target:
-        friendly_team, _ = event.get_named_teams(owner)
-        return [p for p in friendly_team if p is not owner]
+target = {
+    "possible_targets": [
+        "self",
+        "friendly",
+        "enemy",
+        "current_shop",
+        "ahead",
+        "behind",
+    ],
+    "filters": ["level", "ability_type"],
+    "selectors": ["first", "last", "random", "HIGHEST_HEALTH"],
+}
