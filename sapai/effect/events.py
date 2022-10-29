@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import List, Tuple
 from sapai.pets import Pet
 from sapai.foods import Food
 from sapai.teams import Team
@@ -37,13 +36,19 @@ class Event:
     pet: Pet = None
     food: Food = None
     in_battle: bool = False
-    teams: Tuple[Team] = field(default_factory=tuple)
+    teams: tuple[Team] = field(default_factory=tuple)
 
     def __post_init__(self):
         if len(self.teams) > 2:
             raise ValueError("Can only have a maximum of 2 teams")
 
-    def get_named_teams(self, pet: Pet) -> Tuple[List[Pet], List[Pet]]:
+    def pet_in_teams(self, pet: Pet) -> bool:
+        for team in self.teams:
+            if pet in team:
+                return True
+        return False
+
+    def get_named_teams(self, pet: Pet) -> tuple[list[Pet], list[Pet]]:
         """Return 2-tuple of friendly and enemy team determined by given pet
 
         Args:
