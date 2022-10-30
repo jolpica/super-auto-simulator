@@ -19,11 +19,11 @@ class SelfFilter(TargetFilter):
 
 class FriendlyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event):
-        friendly_team, _ = event.get_named_teams(self._owner)
+        friendly_team, _ = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in friendly_team]
 
 
 class EnemyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event):
-        _, enemy_team = event.get_named_teams(self._owner)
+        _, enemy_team = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in enemy_team]

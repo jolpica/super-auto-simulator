@@ -303,7 +303,7 @@ class FriendlyTrigger(ModifierTrigger):
             return False
 
         try:
-            friendly_team, _ = event.get_named_teams(owner)
+            friendly_team, _ = event.get_ordered_teams(owner)
         except ValueError:
             return False
 
@@ -357,7 +357,7 @@ class AheadTrigger(ModifierTrigger):
             return False
 
         try:
-            friendly_team, enemy_team = event.get_named_teams(owner)
+            friendly_team, enemy_team = event.get_ordered_teams(owner)
         except ValueError:
             return False
 

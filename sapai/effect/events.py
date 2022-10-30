@@ -40,19 +40,21 @@ class Event:
 
     def __post_init__(self):
         if len(self.teams) > 2:
-            raise ValueError("Can only have a maximum of 2 teams")
+            raise ValueError("teams must be a tuple of at most 2 teams of pets")
 
-    def pet_in_teams(self, pet: Pet) -> bool:
+    def pet_in_event_teams(self, pet: Pet) -> bool:
         for team in self.teams:
             if pet in team:
                 return True
         return False
 
-    def get_named_teams(self, pet: Pet) -> tuple[list[Pet], list[Pet]]:
+    def get_ordered_teams(self, pet: Pet) -> tuple[list[Pet], list[Pet]]:
         """Return 2-tuple of friendly and enemy team determined by given pet
 
         Args:
-            pet (Pet): The pet the names should be relative to
+            pet (Pet): The pet the team order should be relative to.
+                The given pet will always be found in the first team in the
+                given tuple (the friendly team).
 
         Raises:
             ValueError: given pet is not in either Team
