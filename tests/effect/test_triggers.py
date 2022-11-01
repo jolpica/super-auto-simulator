@@ -11,6 +11,7 @@ from sapai.effect.triggers import (
     LimitTrigger,
     ModifierTrigger,
     SelfTrigger,
+    NeverTrigger,
     Trigger,
     TypeTrigger,
     MultiTrigger,
@@ -23,14 +24,14 @@ from sapai.teams import Team
 class TriggerFactoryTestCase(TestCase):
     def test_trigger_to_dict(self):
         trigger_dict = {"op": False}
-        self.assertEqual(Trigger().to_dict(), trigger_dict)
+        self.assertEqual(NeverTrigger().to_dict(), trigger_dict)
         trigger_dict = {"op": True}
         self.assertEqual(AlwaysTrigger().to_dict(), trigger_dict)
 
     def test_trigger_from_dict(self):
         trigger_dict = {"op": False}
         trigger = Trigger.from_dict(trigger_dict)
-        self.assertEqual(type(trigger), Trigger)
+        self.assertEqual(type(trigger), NeverTrigger)
         self.assertEqual(trigger.to_dict(), trigger_dict)
         trigger_dict = {"op": True}
         trigger = Trigger.from_dict(trigger_dict)
@@ -38,14 +39,10 @@ class TriggerFactoryTestCase(TestCase):
         self.assertEqual(trigger.to_dict(), trigger_dict)
 
     def test_multi_trigger_to_dict(self):
-        sub_triggers = [Trigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
+        sub_triggers = [NeverTrigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
         sub_triggers = sorted(sub_triggers)
         sub_triggers_dict = [t.to_dict() for t in sub_triggers]
 
-        trigger_dict = {"triggers": []}
-        self.assertEqual(MultiTrigger([]).to_dict(), trigger_dict)
-        trigger_dict = {"triggers": sub_triggers_dict}
-        self.assertEqual(MultiTrigger(sub_triggers).to_dict(), trigger_dict)
         trigger_dict = {"op": "ANY", "triggers": []}
         self.assertEqual(AnyTrigger([]).to_dict(), trigger_dict)
         trigger_dict = {"op": "ANY", "triggers": sub_triggers_dict}
@@ -62,7 +59,7 @@ class TriggerFactoryTestCase(TestCase):
         self.assertEqual(trigger1.to_dict(), trigger2.to_dict())
 
     def test_multi_trigger_from_dict(self):
-        sub_triggers = [Trigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
+        sub_triggers = [NeverTrigger(), AlwaysTrigger(), TypeTrigger(EventType.ATTACK)]
         sub_triggers = sorted(sub_triggers)
         sub_triggers_dict = [t.to_dict() for t in sub_triggers]
 
@@ -319,9 +316,9 @@ class TriggerTestCase(TestCase):
             teams=[[self.pet1, self.pet2], [self.pet3, self.pet4]],
         )
 
-    def test_trigger(self):
-        """Default trigger is false"""
-        trigger = Trigger()
+    def test_never_trigger(self):
+        """Never trigger is always false"""
+        trigger = NeverTrigger()
 
         self.assertFalse(trigger.is_triggered(self.none_event))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event))
@@ -336,17 +333,24 @@ class TriggerTestCase(TestCase):
 
     def test_multi_trigger(self):
         """Test MultiTrigger validates input"""
+        # Multitrigger is an abstract class so no instances can be made
+        # Test by using a mock self instance
+        multi = Mock(MultiTrigger)
         try:
-            MultiTrigger([])
-            MultiTrigger([Trigger()])
-            MultiTrigger((Trigger(), AlwaysTrigger()))
+            MultiTrigger.__init__(multi, [])
+            MultiTrigger.__init__(multi, [NeverTrigger()])
+            MultiTrigger.__init__(multi, (NeverTrigger(), AlwaysTrigger()))
         except:
             self.fail("Multitrigger should accept iterables of triggers")
         # Check with None
-        with self.assertRaises(TypeError):
-            MultiTrigger(None)
-        with self.assertRaises(TypeError):
-            MultiTrigger([None])
+        with self.assertRaises(TypeError) as terr:
+            MultiTrigger.__init__(multi, None)
+        if "abstract" in terr.exception.args[0]:
+            self.fail()
+        with self.assertRaises(TypeError) as terr:
+            MultiTrigger.__init__(multi, [None])
+        if "abstract" in terr.exception.args[0]:
+            self.fail()
 
     def test_any_trigger(self):
         """Test AnyTrigger will do boolean OR on given triggers"""
@@ -354,18 +358,18 @@ class TriggerTestCase(TestCase):
         trigger = AnyTrigger([])
         self.assertFalse(trigger.is_triggered(self.none_event))
         # False
-        trigger = AnyTrigger([Trigger()])
+        trigger = AnyTrigger([NeverTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
-        trigger = AnyTrigger([Trigger(), Trigger()])
+        trigger = AnyTrigger([NeverTrigger(), NeverTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
         # True
         trigger = AnyTrigger([AlwaysTrigger()])
         self.assertTrue(trigger.is_triggered(self.none_event))
         trigger = AnyTrigger([AlwaysTrigger(), AlwaysTrigger()])
         self.assertTrue(trigger.is_triggered(self.none_event))
-        trigger = AnyTrigger([Trigger(), Trigger(), AlwaysTrigger()])
+        trigger = AnyTrigger([NeverTrigger(), NeverTrigger(), AlwaysTrigger()])
         self.assertTrue(trigger.is_triggered(self.none_event))
-        trigger = AnyTrigger([AlwaysTrigger(), Trigger(), Trigger()])
+        trigger = AnyTrigger([AlwaysTrigger(), NeverTrigger(), NeverTrigger()])
         self.assertTrue(trigger.is_triggered(self.none_event))
         # Check with None
         with self.assertRaises(TypeError):
@@ -384,13 +388,13 @@ class TriggerTestCase(TestCase):
         trigger = AllTrigger([AlwaysTrigger(), AlwaysTrigger()])
         self.assertTrue(trigger.is_triggered(self.none_event))
         # False
-        trigger = AllTrigger([Trigger()])
+        trigger = AllTrigger([NeverTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
-        trigger = AllTrigger([Trigger(), Trigger()])
+        trigger = AllTrigger([NeverTrigger(), NeverTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
-        trigger = AllTrigger([Trigger(), Trigger(), AlwaysTrigger()])
+        trigger = AllTrigger([NeverTrigger(), NeverTrigger(), AlwaysTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
-        trigger = AllTrigger([AlwaysTrigger(), Trigger(), Trigger()])
+        trigger = AllTrigger([AlwaysTrigger(), NeverTrigger(), NeverTrigger()])
         self.assertFalse(trigger.is_triggered(self.none_event))
         # Check with None
         with self.assertRaises(TypeError):
@@ -434,7 +438,7 @@ class TriggerTestCase(TestCase):
         self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
 
         # Given trigger works as expected
-        trigger = ModifierTrigger(Trigger())
+        trigger = ModifierTrigger(NeverTrigger())
         self.assertFalse(trigger.is_triggered(None))
         trigger = ModifierTrigger(AlwaysTrigger())
         self.assertTrue(trigger.is_triggered(None))

@@ -1,11 +1,13 @@
+from abc import ABC, abstractmethod
 from typing import List, Union
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
 
 
-class Trigger:
+class Trigger(ABC):
     """Base class to determine if an ability's effect should be triggered"""
 
+    @abstractmethod
     def is_triggered(self, event: Event, owner: Pet = None):
         """Determines if the given conditions should trigger an effect
 
@@ -18,8 +20,9 @@ class Trigger:
         Returns:
             bool: Whether the event is triggered.
         """
-        return False
+        pass
 
+    @abstractmethod
     def to_dict(self):
         """Generates a dictionary representation of the trigger
 
@@ -32,7 +35,7 @@ class Trigger:
                 "modifiers": List of dictionaries representing modifiers
                     with a "type" key and possible other keys.
         """
-        return {"op": False}
+        pass
 
     @classmethod
     def from_dict(cls, trigger_dict: dict):
@@ -49,7 +52,7 @@ class Trigger:
                 trigger = AllTrigger(nested_triggers)
         elif trigger_dict.get("op") in (True, False):
             if trigger_dict["op"] is False:
-                trigger = Trigger()
+                trigger = NeverTrigger()
             elif trigger_dict["op"] is True:
                 trigger = AlwaysTrigger()
         else:
@@ -103,6 +106,16 @@ class Trigger:
 
     def __repr__(self):
         return f"Trigger<{self.to_dict()}>"
+
+
+class NeverTrigger(Trigger):
+    """Always triggers, regardless of event or owner"""
+
+    def is_triggered(self, event: Event, owner: Pet = None):
+        return False
+
+    def to_dict(self):
+        return {"op": False}
 
 
 class AlwaysTrigger(Trigger):
