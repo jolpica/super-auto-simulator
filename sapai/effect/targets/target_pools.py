@@ -1,14 +1,16 @@
-from events import Event
+from sapai.effect.events import Event
 from sapai.pets import Pet
-from targets import Target
+from .targets import Target
 
 
 class TargetPool:
     """Generates a list of possible targets"""
 
 
-class AllTargetPool(TargetPool):
+class BattlefieldTargetPool(TargetPool):
     def get_targets(self, event: Event, owner: Pet) -> Target:
+        if len(event.teams) == 0:
+            return []
         friendly_team, enemy_team = event.get_ordered_teams(owner)
         return friendly_team[::-1] + enemy_team
 

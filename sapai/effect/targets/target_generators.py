@@ -1,29 +1,16 @@
-from dataclasses import dataclass, field
-from enum import Flag, auto
-from sapai.foods import Food
 from sapai.pets import Pet
-from typing import Tuple
-from .events import Event
+from sapai.effect.events import Event
+
 from .target_pools import TargetPool
 from .target_filters import TargetFilter
 from .target_selectors import TargetSelector
-
-
-@dataclass
-class Target:
-    """Class for providing target data"""
-
-    pets: Tuple[Pet] = field(default_factory=tuple)
-    foods: Tuple[Food] = field(default_factory=tuple)
-    # shop_generator: ShopGenerator
-    # shop_item: ShopItem
+from .targets import Target
 
 
 class TargetGenerator:
     """Generates a target(s)"""
 
-    def __init__(self) -> None:
-        self.possible_targets: TargetPool = None
+    def __init__(self):
         self.target_filter: TargetFilter = None
         self.target_selector: TargetSelector = None
 
@@ -38,6 +25,13 @@ class TargetGenerator:
 
     def get_possible_foods(self, event: Event, owner: Pet) -> list:
         return []
+
+
+class BattlefieldTargetGenerator(TargetGenerator):
+    """Generates target(s) from current battlefield teams"""
+
+    def __init__(self, target_filter: TargetFilter):
+        self.target_filter = target_filter
 
 
 target = {
