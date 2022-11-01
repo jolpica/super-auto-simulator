@@ -1,7 +1,15 @@
 from unittest import TestCase
 from unittest.mock import Mock
 from sapai.effect.events import Event, EventType
-from sapai.effect.targets import SelfFilter, NotSelfFilter, FriendlyFilter, EnemyFilter
+from sapai.effect.targets import (
+    SelfFilter,
+    NotSelfFilter,
+    FriendlyFilter,
+    EnemyFilter,
+    MultiTargetFilter,
+    AllTargetFilter,
+    AnyTargetFilter,
+)
 from sapai.pets import Pet
 
 
@@ -9,6 +17,9 @@ class TargetFilterTestCase(TestCase):
     def setUp(self):
         self.friendly_team = [Mock(Pet) for i in range(5)]
         self.enemy_team = [Mock(Pet) for i in range(5)]
+        self.combined_team = []
+        for fe in zip(self.friendly_team, self.enemy_team):
+            self.combined_team += fe
         # Event with 0 teams given
         self.event0 = Event(
             EventType.NONE,
@@ -30,6 +41,83 @@ class TargetFilterTestCase(TestCase):
             in_battle=True,
             teams=(self.friendly_team, self.enemy_team),
         )
+
+    def test_multi_filter(self):
+        # Multi filter is abstract so instances can't be made
+        multi = Mock(MultiTargetFilter)
+        owner = self.friendly_team[0]
+        try:
+            MultiTargetFilter.__init__(multi, owner, [])
+            MultiTargetFilter.__init__(multi, owner, [SelfFilter(owner)])
+            MultiTargetFilter.__init__(
+                multi, owner, (FriendlyFilter(owner), SelfFilter(owner))
+            )
+        except Exception as e:
+            raise e
+            self.fail("MultiTargetFilter should accept iterables of filters")
+        # Check with None
+        with self.assertRaises(TypeError) as terr:
+            MultiTargetFilter.__init__(multi, owner, None)
+        if "abstract" in terr.exception.args[0]:
+            self.fail()
+        with self.assertRaises(TypeError) as terr:
+            MultiTargetFilter.__init__(multi, owner, [None])
+        if "abstract" in terr.exception.args[0]:
+            self.fail()
+
+    def test_all_filter(self):
+        """Test AnyTrigger will do boolean OR on given triggers"""
+        owner = self.friendly_team[0]
+        filter_s = SelfFilter(owner)
+        filter_f = FriendlyFilter(owner)
+        filter_e = EnemyFilter(owner)
+        # Empty list returns original list
+        filt = AllTargetFilter(owner, [])
+        self.assertEqual(
+            self.combined_team, filt.filter(self.combined_team, self.event2)
+        )
+        # multiple of same filter has same result
+        expected = filter_s.filter(self.combined_team, self.event2)
+        filt = AllTargetFilter(owner, [filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        filt = AllTargetFilter(owner, [filter_s, filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        # self + friendly combined
+        expected = []
+        filt = AllTargetFilter(owner, [filter_s, filter_e])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        filt = AllTargetFilter(owner, [filter_e, filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        # return nothing
+        filt = AllTargetFilter(owner, [filter_s, filter_e])
+        self.assertEqual([], filt.filter(self.enemy_team, self.event2))
+
+    def test_any_filter(self):
+        """Test AnyTrigger will do boolean OR on given triggers"""
+        owner = self.friendly_team[0]
+        filter_s = SelfFilter(owner)
+        filter_f = FriendlyFilter(owner)
+        filter_e = EnemyFilter(owner)
+        # Empty list
+        filt = AnyTargetFilter(owner, [])
+        self.assertEqual([], filt.filter(self.combined_team, self.event2))
+        # multiple of same filter has same result
+        expected = filter_s.filter(self.combined_team, self.event2)
+        filt = AnyTargetFilter(owner, [filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        filt = AnyTargetFilter(owner, [filter_s, filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        # self + enemy combined
+        expected = filter_s.filter(self.combined_team, self.event2) + filter_e.filter(
+            self.combined_team, self.event2
+        )
+        filt = AnyTargetFilter(owner, [filter_s, filter_e])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        filt = AnyTargetFilter(owner, [filter_e, filter_s])
+        self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
+        # return nothing
+        filt = AnyTargetFilter(owner, [filter_s, filter_f])
+        self.assertEqual([], filt.filter(self.enemy_team, self.event2))
 
     def test_self_filter(self):
         filt = SelfFilter(self.friendly_team[0])

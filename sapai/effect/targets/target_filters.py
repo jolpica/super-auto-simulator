@@ -14,8 +14,38 @@ class TargetFilter(ABC):
         pass
 
 
-class AllTargetFilter(TargetFilter):
-    pass
+class MultiTargetFilter(TargetFilter):
+    """Base class for a filter that applies a list of filters"""
+
+    def __init__(self, owner: Pet, filters: list[TargetFilter]):
+        super().__init__(owner)
+        for f in filters:
+            if not isinstance(f, TargetFilter):
+                raise TypeError("filters must all be TargetFilter instances")
+        # TODO: sort as order is irrelevant (implement __lt__ on TargetFilter)
+        self._filters = filters
+
+
+class AllTargetFilter(MultiTargetFilter):
+    """Returns results that are unfiltered by all of the given filters (AND)
+    returns all pets if given an empty list of filters"""
+
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        for t_filter in self._filters:
+            pets = t_filter.filter(pets, event)
+        return [p for p in pets]
+
+
+class AnyTargetFilter(MultiTargetFilter):
+    """Returns results that are unfiltered by any of the given filters (OR)
+    returns nothing if given an empty list of filters"""
+
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        returned_pets = set()
+        for t_filter in self._filters:
+            returned_pets.update(t_filter.filter(pets, event))
+        # Ensure that pet order is preserved
+        return [p for p in pets if p in returned_pets]
 
 
 class SelfFilter(TargetFilter):
