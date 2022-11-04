@@ -1,7 +1,6 @@
 from sapai.pets import Pet
 from sapai.effect.events import Event
 
-from .target_pools import TargetPool
 from .target_filters import TargetFilter
 from .target_selectors import TargetSelector
 from .targets import Target
