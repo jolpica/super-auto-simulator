@@ -34,26 +34,3 @@ class RandomTargetSelector(TargetSelector):
 
     def select(self, pets: list[Pet], n: int, seed: int = None) -> list[Pet]:
         pass
-
-
-def nth_permutation(items: list, n: int, size: int):
-    """Returns the nth permutation of the given size from the list of items.
-
-    For example in the list [1,2,3], the first permutation of size 2 would be
-    [1,2], the second would be [2,1]
-
-    Args:
-        items (list): _description_
-        n (int): _description_
-        size (int): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    result = []
-    for _ in range(size):
-        item = n % len(items)
-        n = n // len(items)
-        result.append(items.pop(item))
-
-    return result

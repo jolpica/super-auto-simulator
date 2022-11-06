@@ -1,11 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 from sapai.effect.events import Event, EventType
-from sapai.effect.targets import (
-    FirstTargetSelector,
-    LastTargetSelector,
-    nth_permutation,
-)
+from sapai.effect.targets import FirstTargetSelector, LastTargetSelector
 from sapai.pets import Pet
 
 
@@ -43,8 +39,3 @@ class TargetSelectorTestCase(TestCase):
         )
         self.assertEqual(self.friendly_team, selector.select(self.friendly_team, n=5))
         self.assertEqual(self.friendly_team, selector.select(self.friendly_team, n=10))
-
-    def test_nth_permutation(self):
-        print()
-        for i in range(6):
-            print(nth_permutation(list("abcd"), i, 2))
