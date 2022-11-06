@@ -6,6 +6,7 @@ from sapai.effect.targets import (
     RightMostTargetSelector,
     RandomTargetSelector,
     TargetSelector,
+    HighestHealthTargetSelector,
 )
 from sapai.pets import Pet
 
@@ -13,6 +14,8 @@ from sapai.pets import Pet
 class TargetSelectorTestCase(TestCase):
     def setUp(self):
         self.friendly_team = [Mock(Pet) for i in range(5)]
+        for i, p in enumerate(self.friendly_team):
+            p.health = i + 1
         self.enemy_team = [Mock(Pet) for i in range(5)]
 
     def test_validate_args(self):
@@ -64,4 +67,40 @@ class TargetSelectorTestCase(TestCase):
         self.assertEqual(
             self.friendly_team[:2],
             selector.select(self.friendly_team, n=2, rand=0),
+        )
+
+        self.assertFalse(
+            self.friendly_team is selector.select(self.friendly_team, n=99, rand=0)
+        )
+        self.assertFalse(
+            self.friendly_team is selector.select(self.friendly_team, n=5, rand=0)
+        )
+
+    def test_highest_health_target_selector(self):
+        selector = HighestHealthTargetSelector()
+
+        # No duplicate health
+        self.assertEqual([], selector.select(self.friendly_team, n=0, rand=0))
+        expected = self.friendly_team[::-1][:3]
+        self.assertEqual(expected, selector.select(self.friendly_team, n=3, rand=0))
+        self.assertEqual(
+            expected, selector.select(self.friendly_team[::-1], n=3, rand=0)
+        )
+
+        # Duplicate health (pets at index 1,2,3 have 2 health)
+        self.friendly_team[2].health = 2
+        self.friendly_team[3].health = 2
+        duplicates = self.friendly_team[1:4]
+        for i in range(3):
+            self.assertEqual(
+                [self.friendly_team[-1], duplicates[i]],
+                selector.select(self.friendly_team, n=2, rand=i / 3),
+            )
+        self.assertEqual(
+            [self.friendly_team[-1], *duplicates[:2]],
+            selector.select(self.friendly_team, n=3, rand=0),
+        )
+        self.assertEqual(
+            [self.friendly_team[-1], *duplicates],
+            selector.select(self.friendly_team, n=4, rand=0),
         )
