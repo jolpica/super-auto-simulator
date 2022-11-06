@@ -30,16 +30,16 @@ class TargetSelector(ABC):
         pass
 
 
-class FirstTargetSelector(TargetSelector):
-    """Selects the first n targets"""
+class LeftMostTargetSelector(TargetSelector):
+    """Selects the left-most (first) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
         self._validate_args(pets, n, rand)
         return pets[:n]
 
 
-class LastTargetSelector(TargetSelector):
-    """Selects the last n targets"""
+class RightMostTargetSelector(TargetSelector):
+    """Selects the right-most (last) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
         self._validate_args(pets, n, rand)

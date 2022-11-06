@@ -2,8 +2,8 @@ from unittest import TestCase
 from unittest.mock import Mock
 from sapai.effect.events import Event, EventType
 from sapai.effect.targets import (
-    FirstTargetSelector,
-    LastTargetSelector,
+    LeftMostTargetSelector,
+    RightMostTargetSelector,
     RandomTargetSelector,
     TargetSelector,
 )
@@ -26,7 +26,7 @@ class TargetSelectorTestCase(TestCase):
 
     def test_first_target_selector(self):
         """Tests first target selector returns first n pets"""
-        selector = FirstTargetSelector()
+        selector = LeftMostTargetSelector()
         self.assertEqual([], selector.select(self.friendly_team, n=0))
         self.assertEqual(
             [self.friendly_team[0]], selector.select(self.friendly_team, n=1)
@@ -40,7 +40,7 @@ class TargetSelectorTestCase(TestCase):
 
     def test_last_target_selector(self):
         """Tests last target selector returns last n pets"""
-        selector = LastTargetSelector()
+        selector = RightMostTargetSelector()
         self.assertEqual([], selector.select(self.friendly_team, n=0))
         self.assertEqual(
             [self.friendly_team[-1]], selector.select(self.friendly_team, n=1)
