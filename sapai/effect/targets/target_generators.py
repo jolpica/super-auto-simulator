@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from sapai.pets import Pet
 from sapai.effect.events import Event
 
@@ -6,31 +7,33 @@ from .target_selectors import TargetSelector
 from .targets import Target
 
 
-class TargetGenerator:
+class TargetGenerator(ABC):
     """Generates a target(s)"""
 
-    def __init__(self):
-        self.target_filter: TargetFilter = None
-        self.target_selector: TargetSelector = None
+    def __init__(self, filter: TargetFilter, selector: TargetSelector):
+        self._filter = filter
+        self._selector = selector
 
-    def get_targets(self, event: Event, amount: int = 1) -> Target:
-        return Target(
-            pets=self.get_possible_pets(),
-            foods=self.get_possible_foods(),
-        )
+    def _filter_select(self, pets: list[Pet], event: Event, n: int, rand: float):
+        filtered = self._filter.filter(pets, event)
+        return self._selector.select(filtered, n, rand)
 
-    def get_possible_pets(self, event: Event, owner: Pet) -> list:
-        return []
-
-    def get_possible_foods(self, event: Event, owner: Pet) -> list:
-        return []
+    @abstractmethod
+    def get(self, event: Event, n: int, rand: float) -> Target:
+        pass
 
 
 class BattlefieldTargetGenerator(TargetGenerator):
     """Generates target(s) from current battlefield teams"""
 
-    def __init__(self, target_filter: TargetFilter):
-        self.target_filter = target_filter
+    def __init__(self, filter: TargetFilter, selector: TargetSelector, owner: Pet):
+        super().__init__(filter, selector)
+        self._owner = owner
+
+    def get(self, event: Event, n: int, rand: float) -> Target:
+        friendly_team, enemy_team = event.get_ordered_teams(self._owner)
+        pets = [*friendly_team[::-1], *enemy_team]
+        return self._filter_select(pets, event, n, rand)
 
 
 target = {
