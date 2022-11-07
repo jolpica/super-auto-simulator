@@ -6,7 +6,8 @@ from sapai.effect.targets import (
     RightMostTargetSelector,
     RandomTargetSelector,
     TargetSelector,
-    HighestHealthTargetSelector,
+    HealthTargetSelector,
+    ValueTargetSelector,
 )
 from sapai.pets import Pet
 
@@ -76,8 +77,71 @@ class TargetSelectorTestCase(TestCase):
             self.friendly_team is selector.select(self.friendly_team, n=5, rand=0)
         )
 
+    def test_random_selector_tiebreak_select(self):
+        class TestValueSelector(ValueTargetSelector):
+            def select(self):
+                pass
+
+        sel_high = TestValueSelector(highest=True)
+        sel_low = TestValueSelector(highest=False)
+
+        pet_vals = [(p, 5 - i) for i, p in enumerate(self.friendly_team)]
+        # n less <= 0
+        self.assertEqual([], sel_low._tiebreak_select([], n=0, rand=0))
+        self.assertEqual([], sel_high._tiebreak_select([], n=0, rand=0))
+        self.assertEqual([], sel_high._tiebreak_select(pet_vals, n=0, rand=0))
+        self.assertEqual([], sel_high._tiebreak_select([], n=-1, rand=0))
+
+        # items <= n
+        self.assertEqual(
+            self.friendly_team,
+            sel_high._tiebreak_select(pet_vals, n=5, rand=0),
+        )
+        self.assertEqual(
+            self.friendly_team,
+            sel_high._tiebreak_select(pet_vals, n=6, rand=0),
+        )
+        self.assertEqual(
+            self.friendly_team[::-1],
+            sel_low._tiebreak_select(pet_vals, n=5, rand=0),
+        )
+        self.assertEqual(
+            self.friendly_team[::-1],
+            sel_low._tiebreak_select(pet_vals, n=6, rand=0),
+        )
+
+        # no tiebreak
+        self.assertEqual(
+            self.friendly_team[:3],
+            sel_high._tiebreak_select(pet_vals, n=3, rand=0),
+        )
+        self.assertEqual(
+            self.friendly_team[::-1][:3],
+            sel_low._tiebreak_select(pet_vals, n=3, rand=0),
+        )
+
+        # tiebreak
+        values = [1, 3, 3, 3, 5]
+        pet_vals = list(zip(self.friendly_team, values))
+        self.assertEqual(
+            [self.friendly_team[4], self.friendly_team[1]],
+            sel_high._tiebreak_select(pet_vals, n=2, rand=0),
+        )
+        self.assertEqual(
+            [self.friendly_team[4], self.friendly_team[3]],
+            sel_high._tiebreak_select(pet_vals, n=2, rand=2 / 3),
+        )
+        self.assertEqual(
+            [self.friendly_team[0], self.friendly_team[1]],
+            sel_low._tiebreak_select(pet_vals, n=2, rand=0),
+        )
+        self.assertEqual(
+            [self.friendly_team[0], self.friendly_team[3]],
+            sel_low._tiebreak_select(pet_vals, n=2, rand=2 / 3),
+        )
+
     def test_highest_health_target_selector(self):
-        selector = HighestHealthTargetSelector()
+        selector = HealthTargetSelector()
 
         # No duplicate health
         self.assertEqual([], selector.select(self.friendly_team, n=0, rand=0))
@@ -85,6 +149,11 @@ class TargetSelectorTestCase(TestCase):
         self.assertEqual(expected, selector.select(self.friendly_team, n=3, rand=0))
         self.assertEqual(
             expected, selector.select(self.friendly_team[::-1], n=3, rand=0)
+        )
+        # For unique health, input order has no effect on output order
+        self.assertEqual(
+            selector.select(self.friendly_team, n=5, rand=0),
+            selector.select(self.friendly_team[::-1], n=5, rand=0),
         )
 
         # Duplicate health (pets at index 1,2,3 have 2 health)

@@ -51,7 +51,7 @@ class RightMostTargetSelector(TargetSelector):
 class RandomTargetSelector(TargetSelector):
     """Selects n random pets from a list"""
 
-    def random_selection(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+    def _random_select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
         if n >= len(pets):
             # return a copy of the input list
             return pets[:]
@@ -59,35 +59,68 @@ class RandomTargetSelector(TargetSelector):
         index = math.floor(rand * comb)
         return list(nth_combination(pets, n, index))
 
-    def tiebreak_selection(
-        self, items: tuple[Pet, int], n: int, rand: float
-    ) -> list[Pet]:
-        pass
-
     def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
         """Selects the combination at the index: floor(rand * (len(pets) Choose n))"""
         self._validate_args(pets, n, rand)
-        return self.random_selection(pets, n, rand)
+        return self._random_select(pets, n, rand)
 
 
-class HighestHealthTargetSelector(RandomTargetSelector):
-    """Selects n pets with the highest health"""
+class ValueTargetSelector(RandomTargetSelector):
+    """Base class for selecting based on a given value"""
 
-    def __init__(self, highest_health=True) -> None:
+    def __init__(self, highest: bool = True):
+        """Initialises a value selector
+
+        Args:
+            highest (bool): Whether highest or lowest values should be selected.
+        """
         super().__init__()
-        self.highest_health = highest_health
+        self._highest = highest
+
+    def _tiebreak_select(
+        self, items: list[tuple[Pet, int]], n: int, rand: float
+    ) -> list[Pet]:
+        """Selects the top n items values, using a random select to break any ties
+
+        Args:
+            items (list[tuple[Pet, int]]): List of pet, value tuples. With the
+                value determining the sort order.
+            n (int): Number of pets to select
+            rand (float): Number to determine random effects.
+                Must follow `0 >= rand and rand < 1`.
+            highest (bool, optional): Wheter to return the highest or lowest items.
+
+        Returns:
+            list[Pet]: The highest (or lowest) n pets in the list of items.
+        """
+        sorted_items = sorted(items, key=lambda i: i[1], reverse=self._highest)
+        if n <= 0:
+            return []
+        # No excess pets to filter
+        if len(items) <= n:
+            return [p for p, _ in sorted_items]
+
+        cutoff_value = sorted_items[n - 1][1]
+        # If no tiebreak is needed for the top n items
+        if cutoff_value != sorted_items[n][1]:
+            return [p for p, _ in sorted_items[:n]]
+
+        # If there is a tie at the cutoff point randomise the pets selected
+        tied_pets = [p for p, val in sorted_items if val == cutoff_value]
+        above_cutoff = [p for p, val in sorted_items[:n] if val != cutoff_value]
+        needed = n - len(above_cutoff)
+        chosen = self._random_select(tied_pets, n=needed, rand=rand)
+        return [*above_cutoff, *chosen]
+
+    @abstractmethod
+    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+        pass
+
+
+class HealthTargetSelector(ValueTargetSelector):
+    """Selects pets based on health"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
         self._validate_args(pets, n, rand)
-        if n >= len(pets):
-            return pets[:]
-        pets_health = sorted(pets, key=lambda p: p.health, reverse=self.highest_health)
-        # If there is a health draw at the cutoff point randomise the pets selected
-        cutoff_health = pets_health[n - 1].health
-        if cutoff_health == pets_health[n].health:
-            tied_pets = [p for p in pets_health if p.health == cutoff_health]
-            above_cutoff = [p for p in pets_health[:n] if p.health != cutoff_health]
-            needed = n - len(above_cutoff)
-            chosen = self.random_selection(tied_pets, needed, rand)
-            return [*above_cutoff, *chosen]
-        return pets_health[:n]
+        pet_health = [(p, p.health) for p in pets]
+        return self._tiebreak_select(pet_health, n, rand)
