@@ -3,14 +3,14 @@ from sapai.pets import Pet
 from sapai.effect.events import Event
 
 from .target_filters import TargetFilter
-from .target_selectors import TargetSelector
+from .target_selectors import Selector
 from .targets import Target
 
 
 class TargetGenerator(ABC):
     """Generates a target(s)"""
 
-    def __init__(self, filter: TargetFilter, selector: TargetSelector):
+    def __init__(self, filter: TargetFilter, selector: Selector):
         self._filter = filter
         self._selector = selector
 
@@ -26,7 +26,7 @@ class TargetGenerator(ABC):
 class BattlefieldTargetGenerator(TargetGenerator):
     """Generates target(s) from current battlefield teams"""
 
-    def __init__(self, filter: TargetFilter, selector: TargetSelector, owner: Pet):
+    def __init__(self, filter: TargetFilter, selector: Selector, owner: Pet):
         super().__init__(filter, selector)
         self._owner = owner
 

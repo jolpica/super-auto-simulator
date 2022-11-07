@@ -5,7 +5,7 @@ from sapai.pets import Pet
 from sapai.effect.utils import nth_combination
 
 
-class TargetSelector(ABC):
+class Selector(ABC):
     """Selects a target(s) from a list of possible targets"""
 
     def _validate_args(self, pets, n, rand):
@@ -30,7 +30,7 @@ class TargetSelector(ABC):
         pass
 
 
-class LeftMostTargetSelector(TargetSelector):
+class LeftMostSelector(Selector):
     """Selects the left-most (first) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
@@ -38,7 +38,7 @@ class LeftMostTargetSelector(TargetSelector):
         return pets[:n]
 
 
-class RightMostTargetSelector(TargetSelector):
+class RightMostSelector(Selector):
     """Selects the right-most (last) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
@@ -48,7 +48,7 @@ class RightMostTargetSelector(TargetSelector):
         return pets[-n:]
 
 
-class RandomTargetSelector(TargetSelector):
+class RandomSelector(Selector):
     """Selects n random pets from a list"""
 
     def _random_select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
@@ -65,7 +65,7 @@ class RandomTargetSelector(TargetSelector):
         return self._random_select(pets, n, rand)
 
 
-class ValueTargetSelector(RandomTargetSelector):
+class ValueSelector(RandomSelector):
     """Base class for selecting based on a given value"""
 
     def __init__(self, highest: bool = True):
@@ -117,7 +117,7 @@ class ValueTargetSelector(RandomTargetSelector):
         pass
 
 
-class HealthTargetSelector(ValueTargetSelector):
+class HealthSelector(ValueSelector):
     """Selects pets based on health"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
