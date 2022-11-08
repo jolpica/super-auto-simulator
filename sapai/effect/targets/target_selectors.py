@@ -11,7 +11,7 @@ class Selector(ABC):
     def _validate_args(self, pets, n, rand):
         if n < 0:
             raise ValueError("number of selected pets must be > 0")
-        if rand is not None and (rand < 0 or rand >= 1):
+        if rand < 0 or rand >= 1:
             raise ValueError("rand must be in the range [0,1)")
 
     @abstractmethod
@@ -34,7 +34,7 @@ class LeftMostSelector(Selector):
     """Selects the left-most (first) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
-        self._validate_args(pets, n, rand)
+        self._validate_args(pets, n, 0)
         return pets[:n]
 
 
@@ -42,7 +42,7 @@ class RightMostSelector(Selector):
     """Selects the right-most (last) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
-        self._validate_args(pets, n, rand)
+        self._validate_args(pets, n, 0)
         if n == 0:
             return []
         return pets[-n:]
@@ -120,7 +120,25 @@ class ValueSelector(RandomSelector):
 class HealthSelector(ValueSelector):
     """Selects pets based on health"""
 
-    def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
+    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
         self._validate_args(pets, n, rand)
-        pet_health = [(p, p.health) for p in pets]
-        return self._tiebreak_select(pet_health, n, rand)
+        pet_value = [(p, p.health) for p in pets]
+        return self._tiebreak_select(pet_value, n, rand)
+
+
+class AttackSelector(ValueSelector):
+    """Selects pets based on attack"""
+
+    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+        self._validate_args(pets, n, rand)
+        pet_value = [(p, p.attack) for p in pets]
+        return self._tiebreak_select(pet_value, n, rand)
+
+
+class StrengthSelector(ValueSelector):
+    """Selects pets based on value of attack + health"""
+
+    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+        self._validate_args(pets, n, rand)
+        pet_value = [(p, p.attack + p.health) for p in pets]
+        return self._tiebreak_select(pet_value, n, rand)

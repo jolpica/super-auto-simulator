@@ -8,6 +8,8 @@ from sapai.effect.targets import (
     Selector,
     HealthSelector,
     ValueSelector,
+    StrengthSelector,
+    AttackSelector,
 )
 from sapai.pets import Pet
 
@@ -172,4 +174,58 @@ class TargetSelectorTestCase(TestCase):
         self.assertEqual(
             [self.friendly_team[-1], *duplicates],
             selector.select(self.friendly_team, n=4, rand=0),
+        )
+
+    def test_strength_selector(self):
+        selector = StrengthSelector()
+        selector_low = StrengthSelector(highest=False)
+        for i, p in enumerate(self.friendly_team):
+            p.attack = i
+
+        self.assertEqual([], selector.select(self.friendly_team, n=0, rand=0))
+        self.assertEqual(
+            self.friendly_team[::-1], selector.select(self.friendly_team, n=5, rand=0)
+        )
+        self.assertEqual(
+            self.friendly_team, selector_low.select(self.friendly_team, n=5, rand=0)
+        )
+        self.assertEqual(
+            [self.friendly_team[4]], selector.select(self.friendly_team, n=1, rand=0)
+        )
+        self.assertEqual(
+            [self.friendly_team[0]],
+            selector_low.select(self.friendly_team, n=1, rand=0),
+        )
+
+        # Check randomness when attack + health is all equal
+        for i, p in enumerate(self.friendly_team):
+            p.health = 4 - i
+        self.assertEqual(
+            [self.friendly_team[0]],
+            selector_low.select(self.friendly_team, n=1, rand=0),
+        )
+        self.assertEqual(
+            [self.friendly_team[1]],
+            selector_low.select(self.friendly_team, n=1, rand=1 / 5),
+        )
+
+    def test_attack_selector(self):
+        selector = AttackSelector()
+        selector_low = AttackSelector(highest=False)
+        for i, p in enumerate(self.friendly_team):
+            p.attack = i
+
+        self.assertEqual([], selector.select(self.friendly_team, n=0, rand=0))
+        self.assertEqual(
+            self.friendly_team[::-1], selector.select(self.friendly_team, n=5, rand=0)
+        )
+        self.assertEqual(
+            self.friendly_team, selector_low.select(self.friendly_team, n=5, rand=0)
+        )
+        self.assertEqual(
+            [self.friendly_team[4]], selector.select(self.friendly_team, n=1, rand=0)
+        )
+        self.assertEqual(
+            [self.friendly_team[0]],
+            selector_low.select(self.friendly_team, n=1, rand=0),
         )
