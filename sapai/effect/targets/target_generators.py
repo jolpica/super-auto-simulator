@@ -4,7 +4,6 @@ from sapai.effect.events import Event
 
 from .target_filters import TargetFilter
 from .target_selectors import Selector
-from .targets import Target
 
 
 class TargetGenerator(ABC):
@@ -19,7 +18,7 @@ class TargetGenerator(ABC):
         return self._selector.select(filtered, n, rand)
 
     @abstractmethod
-    def get(self, event: Event, n: int, rand: float) -> Target:
+    def get(self, event: Event, n: int, rand: float):
         pass
 
 
@@ -30,7 +29,7 @@ class BattlefieldTargetGenerator(TargetGenerator):
         super().__init__(filter, selector)
         self._owner = owner
 
-    def get(self, event: Event, n: int, rand: float) -> Target:
+    def get(self, event: Event, n: int, rand: float):
         friendly_team, enemy_team = event.get_ordered_teams(self._owner)
         pets = [*friendly_team[::-1], *enemy_team]
         return self._filter_select(pets, event, n, rand)

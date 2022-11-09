@@ -72,3 +72,19 @@ class EnemyFilter(TargetFilter):
             raise ValueError("Owner must be in at least 1 team to use EnemyFilter")
         _, enemy_team = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in enemy_team]
+
+
+class AdjacentFilter(TargetFilter):
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        if not event.pet_in_event_teams(self._owner):
+            raise ValueError("Owner must be in at least 1 team to use AdjacentFilter")
+        friendly_team, enemy_team = event.get_ordered_teams(self._owner)
+        battlefield = [*friendly_team[::-1], *enemy_team]
+        result = []
+        for i, p in enumerate(battlefield):
+            if p is self._owner:
+                if (i - 1) >= 0:
+                    result.append((battlefield[i - 1]))
+                if (i + 1) <= len(battlefield) - 1:
+                    result.append((battlefield[i + 1]))
+        return [p for p in pets if p in result]
