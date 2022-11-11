@@ -50,16 +50,19 @@ class AnyTargetFilter(MultiTargetFilter):
 
 class SelfFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes only the owner pet"""
         return [p for p in pets if p is self._owner]
 
 
 class NotSelfFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets that are not the owner in order given in `pets`"""
         return [p for p in pets if p is not self._owner]
 
 
 class FriendlyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets friendly to owner (inclusive) in order given in `pets`"""
         if not event.pet_in_event_teams(self._owner):
             raise ValueError("Owner must be in at least 1 team to use FriendlyFilter")
         friendly_team, _ = event.get_ordered_teams(self._owner)
@@ -68,23 +71,46 @@ class FriendlyFilter(TargetFilter):
 
 class EnemyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets in opposition to owner in order given in `pets`"""
         if not event.pet_in_event_teams(self._owner):
             raise ValueError("Owner must be in at least 1 team to use EnemyFilter")
         _, enemy_team = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in enemy_team]
 
 
+class AheadFilter(TargetFilter):
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets infront of owner in order from closest to furthest"""
+        if not event.pet_in_event_teams(self._owner):
+            raise ValueError("Owner must be in at least 1 team to use AheadFilter")
+        friendly_team, enemy_team = event.get_ordered_teams(self._owner)
+        battlefield = [*friendly_team[::-1], *enemy_team]
+        idx = battlefield.index(self._owner)
+        return [p for p in battlefield[(idx + 1) :] if p in pets]
+
+
+class BehindFilter(TargetFilter):
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets behind owner in order from closest to furthest"""
+        if not event.pet_in_event_teams(self._owner):
+            raise ValueError("Owner must be in at least 1 team to use BehindFilter")
+        friendly_team, enemy_team = event.get_ordered_teams(self._owner)
+        battlefield = [*friendly_team[::-1], *enemy_team]
+        idx = battlefield.index(self._owner)
+        return [p for p in battlefield[:idx][::-1] if p in pets]
+
+
 class AdjacentFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """includes pets next to owner in order given by `pets`"""
         if not event.pet_in_event_teams(self._owner):
             raise ValueError("Owner must be in at least 1 team to use AdjacentFilter")
         friendly_team, enemy_team = event.get_ordered_teams(self._owner)
         battlefield = [*friendly_team[::-1], *enemy_team]
+        idx = battlefield.index(self._owner)
         result = []
-        for i, p in enumerate(battlefield):
-            if p is self._owner:
-                if (i - 1) >= 0:
-                    result.append((battlefield[i - 1]))
-                if (i + 1) <= len(battlefield) - 1:
-                    result.append((battlefield[i + 1]))
+        if (idx - 1) >= 0:
+            result.append((battlefield[idx - 1]))
+        if (idx + 1) <= len(battlefield) - 1:
+            result.append((battlefield[idx + 1]))
         return [p for p in pets if p in result]

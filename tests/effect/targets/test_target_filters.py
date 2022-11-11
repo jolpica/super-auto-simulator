@@ -1,14 +1,18 @@
 from unittest import TestCase
 from unittest.mock import Mock
+
 from sapai.effect.events import Event, EventType
 from sapai.effect.targets import (
-    SelfFilter,
-    NotSelfFilter,
-    FriendlyFilter,
-    EnemyFilter,
-    MultiTargetFilter,
+    AdjacentFilter,
     AllTargetFilter,
     AnyTargetFilter,
+    EnemyFilter,
+    FriendlyFilter,
+    MultiTargetFilter,
+    NotSelfFilter,
+    SelfFilter,
+    AheadFilter,
+    BehindFilter,
 )
 from sapai.pets import Pet
 
@@ -16,6 +20,9 @@ from sapai.pets import Pet
 class TargetFilterTestCase(TestCase):
     def setUp(self):
         self.friendly_team = [Mock(Pet) for i in range(5)]
+        for i, p in enumerate(self.friendly_team):
+            p.index = i
+            p.__repr__ = lambda s: str(s.index)
         self.enemy_team = [Mock(Pet) for i in range(5)]
         self.combined_team = []
         for fe in zip(self.friendly_team, self.enemy_team):
@@ -205,4 +212,88 @@ class TargetFilterTestCase(TestCase):
                 [self.enemy_team[1], *self.friendly_team, self.enemy_team[0]],
                 self.event2,
             ),
+        )
+
+    def test_ahead_filter(self):
+        # Error if owner isn't in either team
+        filt = AheadFilter(Mock(Pet))
+        with self.assertRaises(ValueError):
+            filt.filter(self.friendly_team, self.event2)
+        # no pets ahead
+        filt = AheadFilter(self.friendly_team[0])
+        self.assertEqual([], filt.filter(self.combined_team, self.event1))
+        self.assertEqual([], filt.filter(self.friendly_team, self.event2))
+        # pets ahead
+        filt = AheadFilter(self.friendly_team[4])
+        self.assertEqual(
+            self.friendly_team[3::-1],
+            filt.filter(self.friendly_team, self.event2),
+        )
+        self.assertEqual(
+            self.friendly_team[3::-1] + self.enemy_team,
+            filt.filter(self.combined_team, self.event2),
+        )
+
+    def test_behind_filter(self):
+        # Error if owner isn't in either team
+        filt = BehindFilter(Mock(Pet))
+        with self.assertRaises(ValueError):
+            filt.filter(self.friendly_team, self.event2)
+        # no pets behind
+        filt = BehindFilter(self.friendly_team[4])
+        self.assertEqual([], filt.filter(self.combined_team, self.event1))
+        self.assertEqual([], filt.filter(self.combined_team, self.event2))
+        # pets ahead
+        filt = BehindFilter(self.friendly_team[0])
+        self.assertEqual(
+            self.friendly_team[1:],
+            filt.filter(self.friendly_team, self.event2),
+        )
+        self.assertEqual(
+            self.friendly_team[1:],
+            filt.filter(self.combined_team, self.event2),
+        )
+
+    def test_adjacent_filter(self):
+        # Error if owner isn't in either team
+        filt = AdjacentFilter(Mock(Pet))
+        with self.assertRaises(ValueError):
+            filt.filter(self.friendly_team, self.event2)
+        # Pet is at back of team
+        filt = AdjacentFilter(self.friendly_team[4])
+        self.assertEqual(
+            [self.friendly_team[3]], filt.filter(self.friendly_team, self.event1)
+        )
+        self.assertEqual(
+            [self.friendly_team[3]], filt.filter(self.friendly_team, self.event2)
+        )
+        # Pet is in middle of team
+        filt = AdjacentFilter(self.friendly_team[2])
+        self.assertEqual(
+            [self.friendly_team[1], self.friendly_team[3]],
+            filt.filter(self.friendly_team, self.event1),
+        )
+        self.assertEqual(
+            [self.friendly_team[1], self.friendly_team[3]],
+            filt.filter(self.friendly_team, self.event2),
+        )
+        # Pet at front of team (no enemy)
+        filt = AdjacentFilter(self.friendly_team[0])
+        self.assertEqual(
+            [self.friendly_team[1]],
+            filt.filter(self.friendly_team, self.event1),
+        )
+        self.assertEqual(
+            [self.friendly_team[1]],
+            filt.filter(self.friendly_team, self.event2),
+        )
+        # Pet at front of team (with enemy)
+        filt = AdjacentFilter(self.friendly_team[0])
+        self.assertEqual(
+            [self.friendly_team[1]],
+            filt.filter(self.friendly_team[::-1] + self.enemy_team, self.event1),
+        )
+        self.assertEqual(
+            [self.friendly_team[1], self.enemy_team[0]],
+            filt.filter(self.friendly_team[::-1] + self.enemy_team, self.event2),
         )
