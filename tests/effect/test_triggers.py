@@ -18,7 +18,6 @@ from sapai.effect.triggers import (
 )
 from sapai.effect.events import Event, EventType
 from sapai.pets import Pet
-from sapai.teams import Team
 
 
 class TriggerFactoryTestCase(TestCase):

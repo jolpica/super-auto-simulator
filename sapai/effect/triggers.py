@@ -1,3 +1,4 @@
+"""Module defining Trigger classes"""
 from abc import ABC, abstractmethod
 from typing import List, Union
 from sapai.pets import Pet
@@ -8,7 +9,7 @@ class Trigger(ABC):
     """Base class to determine if an ability's effect should be triggered"""
 
     @abstractmethod
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         """Determines if the given conditions should trigger an effect
 
         Args:
@@ -20,10 +21,10 @@ class Trigger(ABC):
         Returns:
             bool: Whether the event is triggered.
         """
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Generates a dictionary representation of the trigger
 
         Returns:
@@ -35,21 +36,33 @@ class Trigger(ABC):
                 "modifiers": List of dictionaries representing modifiers
                     with a "type" key and possible other keys.
         """
-        pass
+        raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, trigger_dict: dict):
-        trigger = None
+    def from_dict(cls, trigger_dict: dict) -> "Trigger":
+        """Creates a trigger from its dictionary representation
+
+        Args:
+            trigger_dict (dict): dictionary representation to create trigger from.
+
+        Raises:
+            ValueError: When given an invalid dictionary
+
+        Returns:
+            Trigger: Trigger instance specified by trigger_dict
+        """
 
         # Create base trigger based on "op" or "event" key
         if trigger_dict.get("event") in [et.name for et in EventType]:
             trigger = TypeTrigger(EventType[trigger_dict["event"]])
+
         elif trigger_dict.get("op") in ("ANY", "ALL") and "triggers" in trigger_dict:
             nested_triggers = [cls.from_dict(t) for t in trigger_dict["triggers"]]
             if trigger_dict["op"] == "ANY":
                 trigger = AnyTrigger(nested_triggers)
             elif trigger_dict["op"] == "ALL":
                 trigger = AllTrigger(nested_triggers)
+
         elif trigger_dict.get("op") in (True, False):
             if trigger_dict["op"] is False:
                 trigger = NeverTrigger()
@@ -70,9 +83,23 @@ class Trigger(ABC):
         return trigger
 
     @classmethod
-    def add_modifier_from_dict(cls, trigger: "Trigger", modifier_dict: dict):
+    def add_modifier_from_dict(
+        cls, trigger: "Trigger", modifier_dict: dict
+    ) -> "Trigger":
+        """Add modifier to given trigger as given by modifier_dict
+
+        Args:
+            trigger (Trigger): Trigger to add modifier
+            modifier_dict (dict): Dictionary specification of modifier
+
+        Raises:
+            ValueError: Invalid modifier dictionary
+
+        Returns:
+            Trigger: Trigger with added modifier
+        """
         if not modifier_dict.get("type"):
-            raise ValueError(f"Missing modifier type")
+            raise ValueError("Missing modifier type")
 
         if modifier_dict["type"] == "self":
             return SelfTrigger(trigger)
@@ -111,20 +138,20 @@ class Trigger(ABC):
 class NeverTrigger(Trigger):
     """Always triggers, regardless of event or owner"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         return False
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {"op": False}
 
 
 class AlwaysTrigger(Trigger):
     """Always triggers, regardless of event or owner"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         return True
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {"op": True}
 
 
@@ -132,28 +159,27 @@ class MultiTrigger(Trigger):
     """Base class for a trigger that takes a list of triggers"""
 
     def __init__(self, triggers: List[Trigger]):
-        for t in triggers:
-            if not isinstance(t, Trigger):
+        for trig in triggers:
+            if not isinstance(trig, Trigger):
                 raise TypeError("triggers must all be Trigger instances")
         # Sort so order is irrelevant
         self._triggers = sorted(triggers)
 
-    def to_dict(self):
-        return {
-            "triggers": [t.to_dict() for t in self._triggers],
-        }
+    @abstractmethod
+    def to_dict(self) -> dict:
+        return {"triggers": [t.to_dict() for t in self._triggers]}
 
 
 class AnyTrigger(MultiTrigger):
     """Triggers if any of the given triggers are triggered"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         for trigger in self._triggers:
             if trigger.is_triggered(event, owner):
                 return True
         return False
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         result["op"] = "ANY"
         return result
@@ -162,13 +188,13 @@ class AnyTrigger(MultiTrigger):
 class AllTrigger(MultiTrigger):
     """Triggers if all of the given triggers are triggered"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         for trigger in self._triggers:
             if not trigger.is_triggered(event, owner):
                 return False
         return len(self._triggers) > 0
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         result["op"] = "ALL"
         return result
@@ -180,10 +206,10 @@ class TypeTrigger(Trigger):
     def __init__(self, event_type: EventType):
         self._event_type = event_type
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         return event and event.type is self._event_type
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {"event": self._event_type.name}
 
 
@@ -199,10 +225,10 @@ class ModifierTrigger(Trigger):
         else:
             raise ValueError("trigger must be of type Trigger or EventType")
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         return self._trigger.is_triggered(event, owner)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = self._trigger.to_dict()
         if "modifiers" not in result:
             result["modifiers"] = []
@@ -219,16 +245,16 @@ class LimitTrigger(ModifierTrigger):
         reset_event: EventType = EventType.START_OF_TURN,
     ):
         if not isinstance(reset_event, EventType):
-            raise TypeError(f"reset_event must be of type EventType")
+            raise TypeError("reset_event must be of type EventType")
         super().__init__(trigger)
         self._reset_event = reset_event
-        self.n = n
-        self.remaining_limit = self.n
+        self.trigger_limit = n
+        self.remaining_limit = self.trigger_limit
 
     def reset_limit(self):
-        self.remaining_limit = self.n
+        self.remaining_limit = self.trigger_limit
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if event.type is self._reset_event:
             self.reset_limit()
 
@@ -240,11 +266,11 @@ class LimitTrigger(ModifierTrigger):
             self.remaining_limit -= 1
         return is_triggered
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {
             "type": "limit",
-            "n": self.n,
+            "n": self.trigger_limit,
             "reset_event": self._reset_event.name,
         }
         result["modifiers"].append(modifier)
@@ -261,32 +287,32 @@ class CountTrigger(ModifierTrigger):
         reset_event: EventType = EventType.START_OF_TURN,
     ):
         if not isinstance(reset_event, EventType):
-            raise TypeError(f"reset_event must be of type EventType")
+            raise TypeError("reset_event must be of type EventType")
         super().__init__(trigger)
         self._reset_event = reset_event
-        self.n = n
+        self.required_count = n
         self.count = 0
 
     def reset_count(self):
         self.count = 0
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if event.type is self._reset_event:
             self.reset_count()
 
         if super().is_triggered(event, owner):
             self.count += 1
 
-            if self.count >= self.n:
+            if self.count >= self.required_count:
                 self.reset_count()
                 return True
         return False
 
-    def to_dict(self, starting_dict=None):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {
             "type": "count",
-            "n": self.n,
+            "n": self.required_count,
             "reset_event": self._reset_event.name,
         }
         result["modifiers"].append(modifier)
@@ -296,12 +322,12 @@ class CountTrigger(ModifierTrigger):
 class SelfTrigger(ModifierTrigger):
     """Trigger on type IF event pet is owner pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if not super().is_triggered(event, owner):
             return False
         return None not in (owner, event.pet) and owner is event.pet
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {"type": "self"}
         result["modifiers"].append(modifier)
@@ -311,7 +337,7 @@ class SelfTrigger(ModifierTrigger):
 class FriendlyTrigger(ModifierTrigger):
     """Trigger on type IF event pet is a *non-owner* friendly pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if not super().is_triggered(event, owner):
             return False
 
@@ -326,7 +352,7 @@ class FriendlyTrigger(ModifierTrigger):
             and event.pet in friendly_team
         )
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {"type": "friendly"}
         result["modifiers"].append(modifier)
@@ -336,7 +362,7 @@ class FriendlyTrigger(ModifierTrigger):
 class EnemyTrigger(ModifierTrigger):
     """Trigger on type IF event pet is an enemy pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if not super().is_triggered(event, owner):
             return False
 
@@ -352,7 +378,7 @@ class EnemyTrigger(ModifierTrigger):
 
         return None not in (enemy_team, owner, event.pet) and event.pet in enemy_team
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {"type": "enemy"}
         result["modifiers"].append(modifier)
@@ -362,7 +388,7 @@ class EnemyTrigger(ModifierTrigger):
 class AheadTrigger(ModifierTrigger):
     """Trigger on type IF event pet is ahead"""
 
-    def is_triggered(self, event: Event, owner: Pet = None):
+    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
         if not super().is_triggered(event, owner):
             return False
 
@@ -382,7 +408,7 @@ class AheadTrigger(ModifierTrigger):
 
         return False
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = super().to_dict()
         modifier = {"type": "ahead"}
         result["modifiers"].append(modifier)
