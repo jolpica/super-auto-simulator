@@ -15,8 +15,27 @@ python = "^3.9"
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
 ipykernel = "^6.16.0"
+pylint = "^2.15.5"
 
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.pylint.basic]
+# Minimum line length for functions/classes that require docstrings, shorter ones
+# are exempt.
+docstring-min-length = 5
+
+# Regular expression which should only match function or class names that do not
+# require a docstring.
+no-docstring-rgx = "(^_)|(^test_)|(.*TestCase$)"
+
+
+[tool.pylint.format]
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
+
+# Maximum number of characters on a single line.
+max-line-length = 100
