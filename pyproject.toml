@@ -28,7 +28,7 @@ build-backend = "poetry.core.masonry.api"
 # are exempt.
 docstring-min-length = 5
 
-ignore-path = "tests/.*\.py"
+ignore-patterns = ["^test_.*py"]
 
 
 [tool.pylint.format]
