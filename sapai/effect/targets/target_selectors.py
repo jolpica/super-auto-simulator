@@ -1,14 +1,28 @@
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 import math
 
 from sapai.pets import Pet
 from sapai.effect.utils import nth_combination
 
 
+class SelectorType(Enum):
+    """Enumeration of types of selector"""
+
+    FIRST = auto()
+    LAST = auto()
+    RANDOM = auto()
+    HEALTH = auto()
+    ATTACK = auto()
+    STRENGTH = auto()
+
+
 class Selector(ABC):
     """Selects a target(s) from a list of possible targets"""
 
-    def _validate_args(self, pets, n, rand):
+    TYPE = None
+
+    def _validate_args(self, pets: list[Pet], n: int, rand: float):
         if n < 0:
             raise ValueError("number of selected pets must be > 0")
         if rand < 0 or rand >= 1:
@@ -25,20 +39,41 @@ class Selector(ABC):
                 Must follow `0 >= rand and rand < 1`.
 
         Returns:
-            list[Pet]: _description_
+            list[Pet]: list of pets selected
         """
-        pass
+        raise NotImplementedError()
+
+    @staticmethod
+    @abstractmethod
+    def get_selector_type() -> SelectorType:
+        raise NotImplementedError()
+
+    def to_dict(self) -> dict:
+        """Generates a dictionary representation of the selector
+
+        Returns:
+            dict: Selector's dictionary representation, of the form:
+                {
+                    "selector": The type/name of the filter
+                }
+        """
+        sel_type = self.get_selector_type()
+        return {"selector": sel_type.name}
 
 
-class LeftMostSelector(Selector):
+class FirstSelector(Selector):
     """Selects the left-most (first) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
         self._validate_args(pets, n, 0)
         return pets[:n]
 
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.FIRST
 
-class RightMostSelector(Selector):
+
+class LastSelector(Selector):
     """Selects the right-most (last) n targets"""
 
     def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
@@ -46,6 +81,10 @@ class RightMostSelector(Selector):
         if n == 0:
             return []
         return pets[-n:]
+
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.LAST
 
 
 class RandomSelector(Selector):
@@ -63,6 +102,10 @@ class RandomSelector(Selector):
         """Selects the combination at the index: floor(rand * (len(pets) Choose n))"""
         self._validate_args(pets, n, rand)
         return self._random_select(pets, n, rand)
+
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.RANDOM
 
 
 class ValueSelector(RandomSelector):
@@ -114,7 +157,17 @@ class ValueSelector(RandomSelector):
 
     @abstractmethod
     def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        pass
+        raise NotImplementedError()
+
+    @staticmethod
+    @abstractmethod
+    def get_selector_type() -> SelectorType:
+        raise NotImplementedError()
+
+    def to_dict(self) -> dict:
+        result = super().to_dict()
+        result["highest"] = self._highest
+        return result
 
 
 class HealthSelector(ValueSelector):
@@ -125,6 +178,10 @@ class HealthSelector(ValueSelector):
         pet_value = [(p, p.health) for p in pets]
         return self._tiebreak_select(pet_value, n, rand)
 
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.HEALTH
+
 
 class AttackSelector(ValueSelector):
     """Selects pets based on attack"""
@@ -134,6 +191,10 @@ class AttackSelector(ValueSelector):
         pet_value = [(p, p.attack) for p in pets]
         return self._tiebreak_select(pet_value, n, rand)
 
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.ATTACK
+
 
 class StrengthSelector(ValueSelector):
     """Selects pets based on value of attack + health"""
@@ -142,3 +203,7 @@ class StrengthSelector(ValueSelector):
         self._validate_args(pets, n, rand)
         pet_value = [(p, p.attack + p.health) for p in pets]
         return self._tiebreak_select(pet_value, n, rand)
+
+    @staticmethod
+    def get_selector_type() -> SelectorType:
+        return SelectorType.STRENGTH

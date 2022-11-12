@@ -4,15 +4,17 @@ from unittest.mock import Mock
 from sapai.effect.events import Event, EventType
 from sapai.effect.targets import (
     AdjacentFilter,
+    AheadFilter,
     AllTargetFilter,
     AnyTargetFilter,
+    BehindFilter,
     EnemyFilter,
     FriendlyFilter,
     MultiTargetFilter,
     NotSelfFilter,
     SelfFilter,
-    AheadFilter,
-    BehindFilter,
+    FilterType,
+    TargetFilter,
 )
 from sapai.pets import Pet
 
@@ -60,7 +62,6 @@ class TargetFilterTestCase(TestCase):
                 multi, owner, (FriendlyFilter(owner), SelfFilter(owner))
             )
         except Exception as e:
-            raise e
             self.fail("MultiTargetFilter should accept iterables of filters")
         # Check with None
         with self.assertRaises(TypeError) as terr:
@@ -262,10 +263,12 @@ class TargetFilterTestCase(TestCase):
         # Pet is at back of team
         filt = AdjacentFilter(self.friendly_team[4])
         self.assertEqual(
-            [self.friendly_team[3]], filt.filter(self.friendly_team, self.event1)
+            [self.friendly_team[3]],
+            filt.filter(self.friendly_team, self.event1),
         )
         self.assertEqual(
-            [self.friendly_team[3]], filt.filter(self.friendly_team, self.event2)
+            [self.friendly_team[3]],
+            filt.filter(self.friendly_team, self.event2),
         )
         # Pet is in middle of team
         filt = AdjacentFilter(self.friendly_team[2])
@@ -297,3 +300,80 @@ class TargetFilterTestCase(TestCase):
             [self.friendly_team[1], self.enemy_team[0]],
             filt.filter(self.friendly_team[::-1] + self.enemy_team, self.event2),
         )
+
+
+class FilterToDictTestCase(TestCase):
+    def test_simple_filter_to_dict(self):
+        """Tests non op filters (not multi)"""
+        test_dict = {
+            AdjacentFilter: {"filter": "ADJACENT"},
+            AheadFilter: {"filter": "AHEAD"},
+            BehindFilter: {"filter": "BEHIND"},
+            EnemyFilter: {"filter": "ENEMY"},
+            FriendlyFilter: {"filter": "FRIENDLY"},
+            NotSelfFilter: {"filter": "NOT_SELF"},
+            SelfFilter: {"filter": "SELF"},
+        }
+        owner = Mock(Pet)
+        for filt, result in test_dict.items():
+            self.assertEqual(result, filt(owner).to_dict())
+
+    def test_multi_filter_to_dict(self):
+        """Test MultiTargetFilter to_dict"""
+
+        class TestMultiFilter(MultiTargetFilter):
+            def to_dict(self) -> dict:
+                return super().to_dict()
+
+            def filter(self, pets: list[Pet], event: Event):
+                pass
+
+        owner = Mock(Pet)
+        self.assertEqual(
+            {"filters": [{"filter": "AHEAD"}]},
+            TestMultiFilter(owner, [AheadFilter(owner)]).to_dict(),
+        )
+        self.assertEqual(
+            {"filters": [{"filter": "AHEAD"}, {"filter": "BEHIND"}]},
+            TestMultiFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
+        )
+        self.assertEqual(
+            {"filters": []},
+            TestMultiFilter(owner, []).to_dict(),
+        )
+
+    def test_all_any_filter_to_dict(self):
+        """Tests to_dict of any or all filter"""
+        owner = Mock(Pet)
+        filters_list = [{"filter": "AHEAD"}, {"filter": "BEHIND"}]
+
+        self.assertEqual(
+            {"op": "ALL", "filters": filters_list},
+            AllTargetFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
+        )
+        self.assertEqual(
+            {"op": "ANY", "filters": filters_list},
+            AnyTargetFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
+        )
+
+
+class FilterFromDictTestCase(TestCase):
+    def test_simple_filter_from_dict(self):
+        """Creation of filter from dict representation"""
+        filter_names = [f.name for f in FilterType]
+        owner = Mock(Pet)
+        for name in filter_names:
+            TargetFilter.from_dict({"filter": name}, owner)
+
+        with self.assertRaises(ValueError):
+            TargetFilter.from_dict({"filter": "!?NOTVALID"}, owner)
+
+    def test_multi_filter_from_dict(self):
+        owner = Mock(Pet)
+
+        with self.assertRaises(ValueError):
+            TargetFilter.from_dict({"op": "ANY"}, owner)
+        with self.assertRaises(ValueError):
+            TargetFilter.from_dict({"op": "ALL"}, owner)
+        with self.assertRaises(ValueError):
+            TargetFilter.from_dict({"filters": [SelfFilter(owner).to_dict()]}, owner)

@@ -1,15 +1,16 @@
 from unittest import TestCase
 from unittest.mock import Mock
+
 from sapai.effect.events import Event, EventType
 from sapai.effect.targets import (
-    LeftMostSelector,
-    RightMostSelector,
+    AttackSelector,
+    FirstSelector,
+    HealthSelector,
+    LastSelector,
     RandomSelector,
     Selector,
-    HealthSelector,
-    ValueSelector,
     StrengthSelector,
-    AttackSelector,
+    ValueSelector,
 )
 from sapai.pets import Pet
 
@@ -32,7 +33,7 @@ class TargetSelectorTestCase(TestCase):
 
     def test_first_target_selector(self):
         """Tests first target selector returns first n pets"""
-        selector = LeftMostSelector()
+        selector = FirstSelector()
         self.assertEqual([], selector.select(self.friendly_team, n=0))
         self.assertEqual(
             [self.friendly_team[0]], selector.select(self.friendly_team, n=1)
@@ -46,7 +47,7 @@ class TargetSelectorTestCase(TestCase):
 
     def test_last_target_selector(self):
         """Tests last target selector returns last n pets"""
-        selector = RightMostSelector()
+        selector = LastSelector()
         self.assertEqual([], selector.select(self.friendly_team, n=0))
         self.assertEqual(
             [self.friendly_team[-1]], selector.select(self.friendly_team, n=1)
@@ -82,6 +83,9 @@ class TargetSelectorTestCase(TestCase):
     def test_random_selector_tiebreak_select(self):
         class TestValueSelector(ValueSelector):
             def select(self):
+                pass
+
+            def get_selector_type(self):
                 pass
 
         sel_high = TestValueSelector(highest=True)
@@ -229,3 +233,26 @@ class TargetSelectorTestCase(TestCase):
             [self.friendly_team[0]],
             selector_low.select(self.friendly_team, n=1, rand=0),
         )
+
+
+class SelectorToDictTestCase(TestCase):
+    def test_simple_selector_to_dict(self):
+        test_dict = {
+            FirstSelector: {"selector": "FIRST"},
+            LastSelector: {"selector": "LAST"},
+            RandomSelector: {"selector": "RANDOM"},
+        }
+        for sel, result in test_dict.items():
+            self.assertEqual(result, sel().to_dict())
+
+    def test_value_selector_to_dict(self):
+        test_dict = {
+            AttackSelector: {"selector": "ATTACK"},
+            HealthSelector: {"selector": "HEALTH"},
+            StrengthSelector: {"selector": "STRENGTH"},
+        }
+        for sel, result in test_dict.items():
+            result["highest"] = True
+            self.assertEqual(result, sel(highest=True).to_dict())
+            result["highest"] = False
+            self.assertEqual(result, sel(highest=False).to_dict())
