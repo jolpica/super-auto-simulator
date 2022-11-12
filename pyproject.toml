@@ -28,9 +28,7 @@ build-backend = "poetry.core.masonry.api"
 # are exempt.
 docstring-min-length = 5
 
-# Regular expression which should only match function or class names that do not
-# require a docstring.
-no-docstring-rgx = "(^_)|(^test_)|(.*TestCase$)"
+ignore-path = "tests/.*\.py"
 
 
 [tool.pylint.format]
