@@ -9,8 +9,8 @@ from .target_selectors import Selector
 class TargetGenerator(ABC):
     """Generates a target(s)"""
 
-    def __init__(self, filter: TargetFilter, selector: Selector):
-        self._filter = filter
+    def __init__(self, filter_: TargetFilter, selector: Selector):
+        self._filter = filter_
         self._selector = selector
 
     def _filter_select(self, pets: list[Pet], event: Event, n: int, rand: float):
@@ -25,8 +25,8 @@ class TargetGenerator(ABC):
 class BattlefieldTargetGenerator(TargetGenerator):
     """Generates target(s) from current battlefield teams"""
 
-    def __init__(self, filter: TargetFilter, selector: Selector, owner: Pet):
-        super().__init__(filter, selector)
+    def __init__(self, filter_: TargetFilter, selector: Selector, owner: Pet):
+        super().__init__(filter_, selector)
         self._owner = owner
 
     def get(self, event: Event, n: int, rand: float):

@@ -377,3 +377,23 @@ class FilterFromDictTestCase(TestCase):
             TargetFilter.from_dict({"op": "ALL"}, owner)
         with self.assertRaises(ValueError):
             TargetFilter.from_dict({"filters": [SelfFilter(owner).to_dict()]}, owner)
+
+        filt = TargetFilter.from_dict(
+            {
+                "op": "ANY",
+                "filters": [SelfFilter(owner).to_dict(), AheadFilter(owner).to_dict()],
+            },
+            owner,
+        )
+        self.assertIsInstance(filt, AnyTargetFilter)
+        self.assertEqual(len(filt._filters), 2)
+
+        filt = TargetFilter.from_dict(
+            {
+                "op": "ALL",
+                "filters": [SelfFilter(owner).to_dict(), AheadFilter(owner).to_dict()],
+            },
+            owner,
+        )
+        self.assertIsInstance(filt, AllTargetFilter)
+        self.assertEqual(len(filt._filters), 2)

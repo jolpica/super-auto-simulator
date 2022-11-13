@@ -256,3 +256,36 @@ class SelectorToDictTestCase(TestCase):
             self.assertEqual(result, sel(highest=True).to_dict())
             result["highest"] = False
             self.assertEqual(result, sel(highest=False).to_dict())
+
+
+class SelectorFromDictTestCase(TestCase):
+    def test_simple_selector_from_dict(self):
+        test_dict = {
+            FirstSelector: {"selector": "FIRST"},
+            LastSelector: {"selector": "LAST"},
+            RandomSelector: {"selector": "RANDOM"},
+        }
+        for sel, dict_ in test_dict.items():
+            self.assertIsInstance(Selector.from_dict(dict_), sel)
+
+        with self.assertRaises(ValueError):
+            Selector.from_dict({"selector": "invalid value"})
+        with self.assertRaises(ValueError):
+            Selector.from_dict({"selector": "invalid value"})
+
+    def test_value_selector_from_dict(self):
+        test_dict = {
+            AttackSelector: {"selector": "ATTACK"},
+            HealthSelector: {"selector": "HEALTH"},
+            StrengthSelector: {"selector": "STRENGTH"},
+        }
+        for sel, dict_ in test_dict.items():
+            dict_["highest"] = True
+            self.assertIsInstance(Selector.from_dict(dict_), sel)
+            dict_["highest"] = False
+            self.assertIsInstance(Selector.from_dict(dict_), sel)
+
+        with self.assertRaises(ValueError):
+            Selector.from_dict({"selector": "ATTACK"})
+        with self.assertRaises(ValueError):
+            Selector.from_dict({"selector": "ATTACK", "highest": "true"})

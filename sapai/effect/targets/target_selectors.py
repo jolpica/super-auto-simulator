@@ -16,11 +16,27 @@ class SelectorType(Enum):
     ATTACK = auto()
     STRENGTH = auto()
 
+    def to_selector_class(self):
+        """Returns the Selector class corresponding to the enum value"""
+        if self is self.FIRST:
+            class_ = FirstSelector
+        elif self is self.LAST:
+            class_ = LastSelector
+        elif self is self.RANDOM:
+            class_ = RandomSelector
+        elif self is self.HEALTH:
+            class_ = HealthSelector
+        elif self is self.ATTACK:
+            class_ = AttackSelector
+        elif self is self.STRENGTH:
+            class_ = StrengthSelector
+        else:
+            raise NotImplementedError()
+        return class_
+
 
 class Selector(ABC):
     """Selects a target(s) from a list of possible targets"""
-
-    TYPE = None
 
     def _validate_args(self, pets: list[Pet], n: int, rand: float):
         if n < 0:
@@ -59,6 +75,36 @@ class Selector(ABC):
         """
         sel_type = self.get_selector_type()
         return {"selector": sel_type.name}
+
+    @staticmethod
+    def from_dict(dict_: dict) -> "Selector":
+        """Creates a selector from its dictionary representation
+
+        Args:
+            selector_dict (dict): dictionary representation to create selector from.
+
+        Raises:
+            ValueError: When given an invalid dictionary
+
+        Returns:
+            TargetFilter: Selector instance specified by selector_dict
+        """
+        selector_types = [sel_t.name for sel_t in SelectorType]
+        if dict_.get("selector") not in selector_types:
+            raise ValueError("Invalid selector dict representation ('selector' value)")
+
+        class_ = SelectorType[dict_["selector"]].to_selector_class()
+
+        kwargs = {}
+        if issubclass(class_, ValueSelector):
+            if isinstance(dict_.get("highest"), bool):
+                kwargs["highest"] = dict_.get("highest")
+            else:
+                raise ValueError(
+                    "Invalid selector dict representation ('highest' value)"
+                )
+
+        return class_(**kwargs)
 
 
 class FirstSelector(Selector):
