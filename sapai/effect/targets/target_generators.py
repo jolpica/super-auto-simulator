@@ -9,12 +9,12 @@ from .target_selectors import Selector
 class TargetGenerator(ABC):
     """Generates a target(s)"""
 
-    def __init__(self, filter_: TargetFilter, selector: Selector):
+    def __init__(self, selector: Selector, filter_: TargetFilter = None):
         self._filter = filter_
         self._selector = selector
 
     def _filter_select(self, pets: list[Pet], event: Event, n: int, rand: float):
-        filtered = self._filter.filter(pets, event)
+        filtered = self._filter.filter(pets, event) if self._filter else pets
         return self._selector.select(filtered, n, rand)
 
     @abstractmethod
@@ -25,8 +25,8 @@ class TargetGenerator(ABC):
 class BattlefieldTargetGenerator(TargetGenerator):
     """Generates target(s) from current battlefield teams"""
 
-    def __init__(self, filter_: TargetFilter, selector: Selector, owner: Pet):
-        super().__init__(filter_, selector)
+    def __init__(self, owner: Pet, selector: Selector, filter_: TargetFilter = None):
+        super().__init__(selector, filter_)
         self._owner = owner
 
     def get(self, event: Event, n: int, rand: float):
