@@ -6,9 +6,28 @@ from sapai.effect.targets import (
     FirstSelector,
     RandomSelector,
     FriendlyFilter,
+    TargetGenerator,
 )
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
+
+
+class TargetGeneratorTestCase(TestCase):
+    def setUp(self) -> None:
+        self.friendly_team = [Mock(Pet) for i in range(5)]
+        self.enemy_team = [Mock(Pet) for i in range(5)]
+
+    def test_from_dict(self):
+        test = {
+            "target_generator": "BATTLEFIELD",
+            "filter": {"filter": "FRIENDLY"},
+            "selector": {"selector": "RANDOM"},
+        }
+        target = TargetGenerator.from_dict(test, self.friendly_team[0])
+
+        self.assertIsInstance(target, BattlefieldTargetGenerator)
+        self.assertIsInstance(target._filter, FriendlyFilter)
+        self.assertIsInstance(target._selector, RandomSelector)
 
 
 class BattlefieldTargetGeneratorTestCase(TestCase):
@@ -59,3 +78,27 @@ class BattlefieldTargetGeneratorTestCase(TestCase):
 
         self.assertEqual(self.friendly_team[::-1][:2], target.get(self.event, 2, 0))
         self.assertEqual(self.friendly_team[::-1][-2:], target.get(self.event, 2, 0.99))
+
+    def test_to_dict(self):
+        """Test generation of dictionary representation"""
+        target = BattlefieldTargetGenerator(
+            self.friendly_team[0],
+            selector=RandomSelector(),
+            filter_=FriendlyFilter(self.friendly_team[0]),
+        )
+        test = {
+            "target_generator": "BATTLEFIELD",
+            "filter": {"filter": "FRIENDLY"},
+            "selector": {"selector": "RANDOM"},
+        }
+        self.assertEqual(test, target.to_dict())
+        target = BattlefieldTargetGenerator(
+            self.friendly_team[0],
+            selector=RandomSelector(),
+        )
+        test = {
+            "target_generator": "BATTLEFIELD",
+            "filter": {"filter": "NONE"},
+            "selector": {"selector": "RANDOM"},
+        }
+        self.assertEqual(test, target.to_dict())

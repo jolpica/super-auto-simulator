@@ -32,8 +32,10 @@ class FilterType(Enum):
             filt = BehindFilter
         elif self is self.ADJACENT:
             filt = AdjacentFilter
+        elif self is self.NONE:
+            filt = NoneFilter
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f"{self} does not map to a filter class")
         return filt
 
 
@@ -69,7 +71,7 @@ class TargetFilter(ABC):
         """Creates a filter from its dictionary representation
 
         Args:
-            filter_dict (dict): dictionary representation to create trigger from.
+            filter_dict (dict): dictionary representation to create from.
 
         Raises:
             ValueError: When given an invalid dictionary
