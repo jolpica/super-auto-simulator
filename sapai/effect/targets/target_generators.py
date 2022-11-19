@@ -1,9 +1,24 @@
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 from sapai.pets import Pet
 from sapai.effect.events import Event
 
 from .target_filters import TargetFilter, NoneFilter
 from .target_selectors import Selector
+
+
+class TargetGeneratorType(Enum):
+    """Enumeration of types of selector"""
+
+    BATTLEFIELD = auto()
+
+    def to_class(self) -> "TargetGenerator":
+        """Returns the Selector class corresponding to the enum value"""
+        if self is self.BATTLEFIELD:
+            class_ = BattlefieldTargetGenerator
+        else:
+            raise NotImplementedError(f"{self} does not map to a class")
+        return class_
 
 
 class TargetGenerator(ABC):
@@ -21,7 +36,6 @@ class TargetGenerator(ABC):
     def get(self, event: Event, n: int, rand: float):
         pass
 
-    @abstractmethod
     def to_dict(self):
         return {
             "filter": self._filter.to_dict(),
@@ -43,10 +57,11 @@ class TargetGenerator(ABC):
         """
         selector = Selector.from_dict(dict_.get("selector"))
         filter_ = TargetFilter.from_dict(dict_.get("filter"), owner)
-        if dict_.get("target_generator") == "BATTLEFIELD":
-            class_ = BattlefieldTargetGenerator
+        types = [type_.name for type_ in TargetGeneratorType]
+        if dict_.get("target_generator") in types:
+            class_ = TargetGeneratorType[dict_["target_generator"]].to()
         else:
-            raise NotImplementedError()
+            raise ValueError("Invalid TargetGenerator dict representation")
 
         return class_(owner, selector, filter_)
 

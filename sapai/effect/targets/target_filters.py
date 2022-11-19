@@ -16,7 +16,7 @@ class FilterType(Enum):
     BEHIND = auto()
     ADJACENT = auto()
 
-    def to_filter_class(self):
+    def to_class(self) -> "TargetFilter":
         """Returns the TargetFilter class corresponding to the enum value"""
         if self is self.SELF:
             filt = SelfFilter
@@ -35,7 +35,7 @@ class FilterType(Enum):
         elif self is self.NONE:
             filt = NoneFilter
         else:
-            raise NotImplementedError(f"{self} does not map to a filter class")
+            raise NotImplementedError(f"{self} does not map to a class")
         return filt
 
 
@@ -79,9 +79,9 @@ class TargetFilter(ABC):
         Returns:
             TargetFilter: TargetFilter instance specified by filter_dict
         """
-        filter_types = [filt_t.name for filt_t in FilterType]
-        if filter_dict.get("filter") in filter_types:
-            class_ = FilterType[filter_dict["filter"]].to_filter_class()
+        types = [type_.name for type_ in FilterType]
+        if filter_dict.get("filter") in types:
+            class_ = FilterType[filter_dict["filter"]].to_class()
             return class_(owner)
 
         elif filter_dict.get("op") in ("ANY", "ALL") and filter_dict.get("filters"):
@@ -93,7 +93,7 @@ class TargetFilter(ABC):
             return AllTargetFilter(owner, nested_filters)
 
         else:
-            raise ValueError("Invalid filter_dict representation")
+            raise ValueError("Invalid TargetFilter dict representation")
 
 
 class MultiTargetFilter(TargetFilter):

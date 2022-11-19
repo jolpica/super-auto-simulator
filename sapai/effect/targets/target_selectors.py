@@ -16,7 +16,7 @@ class SelectorType(Enum):
     ATTACK = auto()
     STRENGTH = auto()
 
-    def to_selector_class(self):
+    def to_class(self) -> "Selector":
         """Returns the Selector class corresponding to the enum value"""
         if self is self.FIRST:
             class_ = FirstSelector
@@ -31,7 +31,7 @@ class SelectorType(Enum):
         elif self is self.STRENGTH:
             class_ = StrengthSelector
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f"{self} does not map to a class")
         return class_
 
 
@@ -39,6 +39,7 @@ class Selector(ABC):
     """Selects a target(s) from a list of possible targets"""
 
     def _validate_args(self, pets: list[Pet], n: int, rand: float):
+        del pets
         if n < 0:
             raise ValueError("number of selected pets must be > 0")
         if rand < 0 or rand >= 1:
@@ -61,7 +62,7 @@ class Selector(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         raise NotImplementedError()
 
     def to_dict(self) -> dict:
@@ -73,7 +74,7 @@ class Selector(ABC):
                     "selector": The type/name of the filter
                 }
         """
-        sel_type = self.get_selector_type()
+        sel_type = self.get_type()
         return {"selector": sel_type.name}
 
     @staticmethod
@@ -89,11 +90,11 @@ class Selector(ABC):
         Returns:
             TargetFilter: Selector instance specified by selector_dict
         """
-        selector_types = [sel_t.name for sel_t in SelectorType]
-        if dict_.get("selector") not in selector_types:
-            raise ValueError("Invalid selector dict representation ('selector' value)")
+        types = [type_.name for type_ in SelectorType]
+        if dict_.get("selector") not in types:
+            raise ValueError("Invalid Selector dict representation ('selector' value)")
 
-        class_ = SelectorType[dict_["selector"]].to_selector_class()
+        class_ = SelectorType[dict_["selector"]].to_class()
 
         kwargs = {}
         if issubclass(class_, ValueSelector):
@@ -115,7 +116,7 @@ class FirstSelector(Selector):
         return pets[:n]
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.FIRST
 
 
@@ -129,7 +130,7 @@ class LastSelector(Selector):
         return pets[-n:]
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.LAST
 
 
@@ -150,7 +151,7 @@ class RandomSelector(Selector):
         return self._random_select(pets, n, rand)
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.RANDOM
 
 
@@ -207,7 +208,7 @@ class ValueSelector(RandomSelector):
 
     @staticmethod
     @abstractmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         raise NotImplementedError()
 
     def to_dict(self) -> dict:
@@ -225,7 +226,7 @@ class HealthSelector(ValueSelector):
         return self._tiebreak_select(pet_value, n, rand)
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.HEALTH
 
 
@@ -238,7 +239,7 @@ class AttackSelector(ValueSelector):
         return self._tiebreak_select(pet_value, n, rand)
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.ATTACK
 
 
@@ -251,5 +252,5 @@ class StrengthSelector(ValueSelector):
         return self._tiebreak_select(pet_value, n, rand)
 
     @staticmethod
-    def get_selector_type() -> SelectorType:
+    def get_type() -> SelectorType:
         return SelectorType.STRENGTH

@@ -85,7 +85,7 @@ class TargetSelectorTestCase(TestCase):
             def select(self):
                 pass
 
-            def get_selector_type(self):
+            def get_type(self):
                 pass
 
         sel_high = TestValueSelector(highest=True)
