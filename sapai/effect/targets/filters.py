@@ -1,3 +1,4 @@
+"""Module containing target filter definitions"""
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from sapai.pets import Pet
@@ -16,30 +17,39 @@ class FilterType(Enum):
     BEHIND = auto()
     ADJACENT = auto()
 
-    def to_class(self) -> "TargetFilter":
+    @classmethod
+    def _get_mapping(cls):
+        return {
+            cls.NONE: NoneFilter,
+            cls.SELF: SelfFilter,
+            cls.NOT_SELF: NotSelfFilter,
+            cls.FRIENDLY: FriendlyFilter,
+            cls.ENEMY: EnemyFilter,
+            cls.AHEAD: AheadFilter,
+            cls.BEHIND: BehindFilter,
+            cls.ADJACENT: AdjacentFilter,
+        }
+
+    def to_class(self) -> "Filter":
         """Returns the TargetFilter class corresponding to the enum value"""
-        if self is self.SELF:
-            filt = SelfFilter
-        elif self is self.NOT_SELF:
-            filt = NotSelfFilter
-        elif self is self.FRIENDLY:
-            filt = FriendlyFilter
-        elif self is self.ENEMY:
-            filt = EnemyFilter
-        elif self is self.AHEAD:
-            filt = AheadFilter
-        elif self is self.BEHIND:
-            filt = BehindFilter
-        elif self is self.ADJACENT:
-            filt = AdjacentFilter
-        elif self is self.NONE:
-            filt = NoneFilter
+        mapping = self._get_mapping()
+        if self in mapping:
+            class_ = mapping[self]
         else:
             raise NotImplementedError(f"{self} does not map to a class")
-        return filt
+        return class_
+
+    @classmethod
+    def from_class(cls, class_) -> "FilterType":
+        """Returns the Type corresponding to the given class"""
+        mapping = cls._get_mapping()
+        for type_, map_class in mapping.items():
+            if class_ is map_class:
+                return type_
+        raise NotImplementedError(f"{class_} does not map to a type")
 
 
-class TargetFilter(ABC):
+class Filter(ABC):
     """Filters a list of possible targets based on criteria"""
 
     def __init__(self, owner: Pet):
@@ -49,7 +59,6 @@ class TargetFilter(ABC):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         raise NotImplementedError()
 
-    @abstractmethod
     def to_dict(self) -> dict:
         """Generates a dictionary representation of the filter
 
@@ -64,10 +73,10 @@ class TargetFilter(ABC):
                     "filters": List of nested filter dicts to perform "op" on.
                 }
         """
-        raise NotImplementedError()
+        return {"filter": FilterType.from_class(type(self)).name}
 
     @classmethod
-    def from_dict(cls, filter_dict: dict, owner: Pet) -> "TargetFilter":
+    def from_dict(cls, filter_dict: dict, owner: Pet) -> "Filter":
         """Creates a filter from its dictionary representation
 
         Args:
@@ -89,20 +98,20 @@ class TargetFilter(ABC):
                 cls.from_dict(filt_d, owner) for filt_d in filter_dict["filters"]
             ]
             if filter_dict["op"] == "ANY":
-                return AnyTargetFilter(owner, nested_filters)
-            return AllTargetFilter(owner, nested_filters)
+                return AnyFilter(owner, nested_filters)
+            return AllFilter(owner, nested_filters)
 
         else:
             raise ValueError("Invalid TargetFilter dict representation")
 
 
-class MultiTargetFilter(TargetFilter):
+class MultiFilter(Filter):
     """Base class for a filter that applies a list of filters"""
 
-    def __init__(self, owner: Pet, filters: list[TargetFilter]):
+    def __init__(self, owner: Pet, filters: list[Filter]):
         super().__init__(owner)
-        for f in filters:
-            if not isinstance(f, TargetFilter):
+        for filt in filters:
+            if not isinstance(filt, Filter):
                 raise TypeError("filters must all be TargetFilter instances")
         self._filters = filters
 
@@ -113,7 +122,7 @@ class MultiTargetFilter(TargetFilter):
         }
 
 
-class AllTargetFilter(MultiTargetFilter):
+class AllFilter(MultiFilter):
     """Returns results that are unfiltered by all of the given filters (AND)
     returns all pets if given an empty list of filters"""
 
@@ -128,7 +137,7 @@ class AllTargetFilter(MultiTargetFilter):
         return result
 
 
-class AnyTargetFilter(MultiTargetFilter):
+class AnyFilter(MultiFilter):
     """Returns results that are unfiltered by any of the given filters (OR)
     returns nothing if given an empty list of filters"""
 
@@ -145,34 +154,33 @@ class AnyTargetFilter(MultiTargetFilter):
         return result
 
 
-class NoneFilter(TargetFilter):
+class NoneFilter(Filter):
+    """No Filtering"""
+
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """Does no filtering"""
         return [p for p in pets]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.NONE.name}
 
+class SelfFilter(Filter):
+    """Filters to only the owner pet"""
 
-class SelfFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes only the owner pet"""
         return [p for p in pets if p is self._owner]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.SELF.name}
 
+class NotSelfFilter(Filter):
+    """Filters to pets that are not the owner"""
 
-class NotSelfFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets that are not the owner in order given in `pets`"""
         return [p for p in pets if p is not self._owner]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.NOT_SELF.name}
 
+class FriendlyFilter(Filter):
+    """Filters to pets in friendly to owner"""
 
-class FriendlyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets friendly to owner (inclusive) in order given in `pets`"""
         if not event.pet_in_event_teams(self._owner):
@@ -180,11 +188,10 @@ class FriendlyFilter(TargetFilter):
         friendly_team, _ = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in friendly_team]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.FRIENDLY.name}
 
+class EnemyFilter(Filter):
+    """Filters to pets in opposition to owner"""
 
-class EnemyFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets in opposition to owner in order given in `pets`"""
         if not event.pet_in_event_teams(self._owner):
@@ -192,11 +199,10 @@ class EnemyFilter(TargetFilter):
         _, enemy_team = event.get_ordered_teams(self._owner)
         return [p for p in pets if p in enemy_team]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.ENEMY.name}
 
+class AheadFilter(Filter):
+    """Filters to pets ahead of owner"""
 
-class AheadFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets infront of owner in order from closest to furthest"""
         if not event.pet_in_event_teams(self._owner):
@@ -206,11 +212,10 @@ class AheadFilter(TargetFilter):
         idx = battlefield.index(self._owner)
         return [p for p in battlefield[(idx + 1) :] if p in pets]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.AHEAD.name}
 
+class BehindFilter(Filter):
+    """Filters to pets behind owner"""
 
-class BehindFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets behind owner in order from closest to furthest"""
         if not event.pet_in_event_teams(self._owner):
@@ -220,11 +225,10 @@ class BehindFilter(TargetFilter):
         idx = battlefield.index(self._owner)
         return [p for p in battlefield[:idx][::-1] if p in pets]
 
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.BEHIND.name}
 
+class AdjacentFilter(Filter):
+    """Filters to pets adjacent to owner"""
 
-class AdjacentFilter(TargetFilter):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """includes pets next to owner in order given by `pets`"""
         if not event.pet_in_event_teams(self._owner):
@@ -238,6 +242,3 @@ class AdjacentFilter(TargetFilter):
         if (idx + 1) <= len(battlefield) - 1:
             result.append((battlefield[idx + 1]))
         return [p for p in pets if p in result]
-
-    def to_dict(self) -> dict:
-        return {"filter": FilterType.ADJACENT.name}

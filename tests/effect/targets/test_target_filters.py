@@ -5,19 +5,29 @@ from sapai.effect.events import Event, EventType
 from sapai.effect.targets import (
     AdjacentFilter,
     AheadFilter,
-    AllTargetFilter,
-    AnyTargetFilter,
+    AllFilter,
+    AnyFilter,
     BehindFilter,
     EnemyFilter,
     FilterType,
     FriendlyFilter,
-    MultiTargetFilter,
+    MultiFilter,
     NoneFilter,
     NotSelfFilter,
     SelfFilter,
-    TargetFilter,
+    Filter,
+    FilterType,
 )
 from sapai.pets import Pet
+
+
+class FilterTypeTestCase(TestCase):
+    def test_to_from_class(self):
+        """Tests all types map to a class and back"""
+        for type_ in FilterType:
+            class_ = type_.to_class()
+            self.assertTrue(issubclass(class_, Filter))
+            self.assertEqual(FilterType.from_class(class_), type_)
 
 
 class TargetFilterTestCase(TestCase):
@@ -54,23 +64,23 @@ class TargetFilterTestCase(TestCase):
 
     def test_multi_filter(self):
         # Multi filter is abstract so instances can't be made
-        multi = Mock(MultiTargetFilter)
+        multi = Mock(MultiFilter)
         owner = self.friendly_team[0]
         try:
-            MultiTargetFilter.__init__(multi, owner, [])
-            MultiTargetFilter.__init__(multi, owner, [SelfFilter(owner)])
-            MultiTargetFilter.__init__(
+            MultiFilter.__init__(multi, owner, [])
+            MultiFilter.__init__(multi, owner, [SelfFilter(owner)])
+            MultiFilter.__init__(
                 multi, owner, (FriendlyFilter(owner), SelfFilter(owner))
             )
         except Exception as e:
             self.fail("MultiTargetFilter should accept iterables of filters")
         # Check with None
         with self.assertRaises(TypeError) as terr:
-            MultiTargetFilter.__init__(multi, owner, None)
+            MultiFilter.__init__(multi, owner, None)
         if "abstract" in terr.exception.args[0]:
             self.fail()
         with self.assertRaises(TypeError) as terr:
-            MultiTargetFilter.__init__(multi, owner, [None])
+            MultiFilter.__init__(multi, owner, [None])
         if "abstract" in terr.exception.args[0]:
             self.fail()
 
@@ -81,24 +91,24 @@ class TargetFilterTestCase(TestCase):
         filter_f = FriendlyFilter(owner)
         filter_e = EnemyFilter(owner)
         # Empty list returns original list
-        filt = AllTargetFilter(owner, [])
+        filt = AllFilter(owner, [])
         self.assertEqual(
             self.combined_team, filt.filter(self.combined_team, self.event2)
         )
         # multiple of same filter has same result
         expected = filter_s.filter(self.combined_team, self.event2)
-        filt = AllTargetFilter(owner, [filter_s])
+        filt = AllFilter(owner, [filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
-        filt = AllTargetFilter(owner, [filter_s, filter_s])
+        filt = AllFilter(owner, [filter_s, filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
         # self + friendly combined
         expected = []
-        filt = AllTargetFilter(owner, [filter_s, filter_e])
+        filt = AllFilter(owner, [filter_s, filter_e])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
-        filt = AllTargetFilter(owner, [filter_e, filter_s])
+        filt = AllFilter(owner, [filter_e, filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
         # return nothing
-        filt = AllTargetFilter(owner, [filter_s, filter_e])
+        filt = AllFilter(owner, [filter_s, filter_e])
         self.assertEqual([], filt.filter(self.enemy_team, self.event2))
 
     def test_any_filter(self):
@@ -108,24 +118,24 @@ class TargetFilterTestCase(TestCase):
         filter_f = FriendlyFilter(owner)
         filter_e = EnemyFilter(owner)
         # Empty list
-        filt = AnyTargetFilter(owner, [])
+        filt = AnyFilter(owner, [])
         self.assertEqual([], filt.filter(self.combined_team, self.event2))
         # multiple of same filter has same result
         expected = filter_s.filter(self.combined_team, self.event2)
-        filt = AnyTargetFilter(owner, [filter_s])
+        filt = AnyFilter(owner, [filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
-        filt = AnyTargetFilter(owner, [filter_s, filter_s])
+        filt = AnyFilter(owner, [filter_s, filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
         # self + enemy combined
         expected = filter_s.filter(self.combined_team, self.event2) + filter_e.filter(
             self.combined_team, self.event2
         )
-        filt = AnyTargetFilter(owner, [filter_s, filter_e])
+        filt = AnyFilter(owner, [filter_s, filter_e])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
-        filt = AnyTargetFilter(owner, [filter_e, filter_s])
+        filt = AnyFilter(owner, [filter_e, filter_s])
         self.assertEqual(expected, filt.filter(self.combined_team, self.event2))
         # return nothing
-        filt = AnyTargetFilter(owner, [filter_s, filter_f])
+        filt = AnyFilter(owner, [filter_s, filter_f])
         self.assertEqual([], filt.filter(self.enemy_team, self.event2))
 
     def test_none_filter(self):
@@ -341,7 +351,7 @@ class FilterToDictTestCase(TestCase):
     def test_multi_filter_to_dict(self):
         """Test MultiTargetFilter to_dict"""
 
-        class TestMultiFilter(MultiTargetFilter):
+        class TestMultiFilter(MultiFilter):
             def to_dict(self) -> dict:
                 return super().to_dict()
 
@@ -369,11 +379,11 @@ class FilterToDictTestCase(TestCase):
 
         self.assertEqual(
             {"op": "ALL", "filters": filters_list},
-            AllTargetFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
+            AllFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
         )
         self.assertEqual(
             {"op": "ANY", "filters": filters_list},
-            AnyTargetFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
+            AnyFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
         )
 
 
@@ -383,37 +393,37 @@ class FilterFromDictTestCase(TestCase):
         filter_names = [f.name for f in FilterType]
         owner = Mock(Pet)
         for name in filter_names:
-            TargetFilter.from_dict({"filter": name}, owner)
+            Filter.from_dict({"filter": name}, owner)
 
         with self.assertRaises(ValueError):
-            TargetFilter.from_dict({"filter": "!?NOTVALID"}, owner)
+            Filter.from_dict({"filter": "!?NOTVALID"}, owner)
 
     def test_multi_filter_from_dict(self):
         owner = Mock(Pet)
 
         with self.assertRaises(ValueError):
-            TargetFilter.from_dict({"op": "ANY"}, owner)
+            Filter.from_dict({"op": "ANY"}, owner)
         with self.assertRaises(ValueError):
-            TargetFilter.from_dict({"op": "ALL"}, owner)
+            Filter.from_dict({"op": "ALL"}, owner)
         with self.assertRaises(ValueError):
-            TargetFilter.from_dict({"filters": [SelfFilter(owner).to_dict()]}, owner)
+            Filter.from_dict({"filters": [SelfFilter(owner).to_dict()]}, owner)
 
-        filt = TargetFilter.from_dict(
+        filt = Filter.from_dict(
             {
                 "op": "ANY",
                 "filters": [SelfFilter(owner).to_dict(), AheadFilter(owner).to_dict()],
             },
             owner,
         )
-        self.assertIsInstance(filt, AnyTargetFilter)
+        self.assertIsInstance(filt, AnyFilter)
         self.assertEqual(len(filt._filters), 2)
 
-        filt = TargetFilter.from_dict(
+        filt = Filter.from_dict(
             {
                 "op": "ALL",
                 "filters": [SelfFilter(owner).to_dict(), AheadFilter(owner).to_dict()],
             },
             owner,
         )
-        self.assertIsInstance(filt, AllTargetFilter)
+        self.assertIsInstance(filt, AllFilter)
         self.assertEqual(len(filt._filters), 2)

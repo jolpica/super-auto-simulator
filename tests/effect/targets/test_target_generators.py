@@ -7,9 +7,19 @@ from sapai.effect.targets import (
     RandomSelector,
     FriendlyFilter,
     TargetGenerator,
+    TargetGeneratorType,
 )
 from sapai.pets import Pet
 from sapai.effect.events import Event, EventType
+
+
+class SelectorTypeTestCase(TestCase):
+    def test_to_from_class(self):
+        """Tests all types map to a class and back"""
+        for type_ in TargetGeneratorType:
+            class_ = type_.to_class()
+            self.assertTrue(issubclass(class_, TargetGenerator), "not a subclass")
+            self.assertEqual(TargetGeneratorType.from_class(class_), type_)
 
 
 class TargetGeneratorTestCase(TestCase):

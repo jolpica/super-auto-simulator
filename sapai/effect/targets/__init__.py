@@ -1,4 +1,4 @@
-from .targets import *
+"""Target module including target generators, filters and selectors"""
 from .target_generators import *
-from .target_filters import *
-from .target_selectors import *
+from .filters import *
+from .selectors import *

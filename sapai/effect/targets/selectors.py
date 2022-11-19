@@ -1,3 +1,4 @@
+"""Module containing target selector definitions"""
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import math
@@ -16,53 +17,59 @@ class SelectorType(Enum):
     ATTACK = auto()
     STRENGTH = auto()
 
+    @classmethod
+    def _get_mapping(cls):
+        return {
+            cls.FIRST: FirstSelector,
+            cls.LAST: LastSelector,
+            cls.RANDOM: RandomSelector,
+            cls.HEALTH: HealthSelector,
+            cls.ATTACK: AttackSelector,
+            cls.STRENGTH: StrengthSelector,
+        }
+
     def to_class(self) -> "Selector":
         """Returns the Selector class corresponding to the enum value"""
-        if self is self.FIRST:
-            class_ = FirstSelector
-        elif self is self.LAST:
-            class_ = LastSelector
-        elif self is self.RANDOM:
-            class_ = RandomSelector
-        elif self is self.HEALTH:
-            class_ = HealthSelector
-        elif self is self.ATTACK:
-            class_ = AttackSelector
-        elif self is self.STRENGTH:
-            class_ = StrengthSelector
+        mapping = self._get_mapping()
+        if self in mapping:
+            class_ = mapping[self]
         else:
             raise NotImplementedError(f"{self} does not map to a class")
         return class_
+
+    @classmethod
+    def from_class(cls, class_) -> "SelectorType":
+        """Returns the Type corresponding to the given class"""
+        mapping = cls._get_mapping()
+        for type_, map_class in mapping.items():
+            if class_ is map_class:
+                return type_
+        raise NotImplementedError(f"{class_} does not map to a type")
 
 
 class Selector(ABC):
     """Selects a target(s) from a list of possible targets"""
 
-    def _validate_args(self, pets: list[Pet], n: int, rand: float):
+    def _validate_args(self, pets: list[Pet], num: int, rand: float):
         del pets
-        if n < 0:
+        if num < 0:
             raise ValueError("number of selected pets must be > 0")
         if rand < 0 or rand >= 1:
             raise ValueError("rand must be in the range [0,1)")
 
     @abstractmethod
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         """Select n items from the given list of pets
 
         Args:
             pets (list[Pet]): List of pets to choose from
-            n (int): Number of pets to select
+            num (int): Number of pets to select
             rand (int): Number to determine random effects.
                 Must follow `0 >= rand and rand < 1`.
 
         Returns:
             list[Pet]: list of pets selected
         """
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def get_type() -> SelectorType:
         raise NotImplementedError()
 
     def to_dict(self) -> dict:
@@ -74,8 +81,7 @@ class Selector(ABC):
                     "selector": The type/name of the filter
                 }
         """
-        sel_type = self.get_type()
-        return {"selector": sel_type.name}
+        return {"selector": SelectorType.from_class(type(self)).name}
 
     @staticmethod
     def from_dict(dict_: dict) -> "Selector":
@@ -91,6 +97,7 @@ class Selector(ABC):
             TargetFilter: Selector instance specified by selector_dict
         """
         types = [type_.name for type_ in SelectorType]
+        print(types)
         if dict_.get("selector") not in types:
             raise ValueError("Invalid Selector dict representation ('selector' value)")
 
@@ -111,48 +118,33 @@ class Selector(ABC):
 class FirstSelector(Selector):
     """Selects the left-most (first) n targets"""
 
-    def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
-        self._validate_args(pets, n, 0)
-        return pets[:n]
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.FIRST
+    def select(self, pets: list[Pet], num: int, rand: float = None) -> list[Pet]:
+        self._validate_args(pets, num, 0)
+        return pets[:num]
 
 
-class LastSelector(Selector):
+class LastSelector(FirstSelector):
     """Selects the right-most (last) n targets"""
 
-    def select(self, pets: list[Pet], n: int, rand: float = None) -> list[Pet]:
-        self._validate_args(pets, n, 0)
-        if n == 0:
-            return []
-        return pets[-n:]
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.LAST
+    def select(self, pets: list[Pet], num: int, rand: float = None) -> list[Pet]:
+        return super().select(pets[::-1], num, rand)
 
 
 class RandomSelector(Selector):
     """Selects n random pets from a list"""
 
-    def _random_select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        if n >= len(pets):
+    def _random_select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
+        if num >= len(pets):
             # return a copy of the input list
             return pets[:]
-        comb = math.comb(len(pets), n)
+        comb = math.comb(len(pets), num)
         index = math.floor(rand * comb)
-        return list(nth_combination(pets, n, index))
+        return list(nth_combination(pets, num, index))
 
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         """Selects the combination at the index: floor(rand * (len(pets) Choose n))"""
-        self._validate_args(pets, n, rand)
-        return self._random_select(pets, n, rand)
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.RANDOM
+        self._validate_args(pets, num, rand)
+        return self._random_select(pets, num, rand)
 
 
 class ValueSelector(RandomSelector):
@@ -168,7 +160,7 @@ class ValueSelector(RandomSelector):
         self._highest = highest
 
     def _tiebreak_select(
-        self, items: list[tuple[Pet, int]], n: int, rand: float
+        self, items: list[tuple[Pet, int]], num: int, rand: float
     ) -> list[Pet]:
         """Selects the top n items values, using a random select to break any ties
 
@@ -184,31 +176,26 @@ class ValueSelector(RandomSelector):
             list[Pet]: The highest (or lowest) n pets in the list of items.
         """
         sorted_items = sorted(items, key=lambda i: i[1], reverse=self._highest)
-        if n <= 0:
+        if num <= 0:
             return []
         # No excess pets to filter
-        if len(items) <= n:
+        if len(items) <= num:
             return [p for p, _ in sorted_items]
 
-        cutoff_value = sorted_items[n - 1][1]
+        cutoff_value = sorted_items[num - 1][1]
         # If no tiebreak is needed for the top n items
-        if cutoff_value != sorted_items[n][1]:
-            return [p for p, _ in sorted_items[:n]]
+        if cutoff_value != sorted_items[num][1]:
+            return [p for p, _ in sorted_items[:num]]
 
         # If there is a tie at the cutoff point randomise the pets selected
         tied_pets = [p for p, val in sorted_items if val == cutoff_value]
-        above_cutoff = [p for p, val in sorted_items[:n] if val != cutoff_value]
-        needed = n - len(above_cutoff)
-        chosen = self._random_select(tied_pets, n=needed, rand=rand)
+        above_cutoff = [p for p, val in sorted_items[:num] if val != cutoff_value]
+        needed = num - len(above_cutoff)
+        chosen = self._random_select(tied_pets, num=needed, rand=rand)
         return [*above_cutoff, *chosen]
 
     @abstractmethod
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def get_type() -> SelectorType:
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         raise NotImplementedError()
 
     def to_dict(self) -> dict:
@@ -220,37 +207,25 @@ class ValueSelector(RandomSelector):
 class HealthSelector(ValueSelector):
     """Selects pets based on health"""
 
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        self._validate_args(pets, n, rand)
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
+        self._validate_args(pets, num, rand)
         pet_value = [(p, p.health) for p in pets]
-        return self._tiebreak_select(pet_value, n, rand)
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.HEALTH
+        return self._tiebreak_select(pet_value, num, rand)
 
 
 class AttackSelector(ValueSelector):
     """Selects pets based on attack"""
 
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        self._validate_args(pets, n, rand)
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
+        self._validate_args(pets, num, rand)
         pet_value = [(p, p.attack) for p in pets]
-        return self._tiebreak_select(pet_value, n, rand)
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.ATTACK
+        return self._tiebreak_select(pet_value, num, rand)
 
 
 class StrengthSelector(ValueSelector):
     """Selects pets based on value of attack + health"""
 
-    def select(self, pets: list[Pet], n: int, rand: float) -> list[Pet]:
-        self._validate_args(pets, n, rand)
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
+        self._validate_args(pets, num, rand)
         pet_value = [(p, p.attack + p.health) for p in pets]
-        return self._tiebreak_select(pet_value, n, rand)
-
-    @staticmethod
-    def get_type() -> SelectorType:
-        return SelectorType.STRENGTH
+        return self._tiebreak_select(pet_value, num, rand)
