@@ -9,11 +9,12 @@ from sapai.effect.targets import (
     AnyTargetFilter,
     BehindFilter,
     EnemyFilter,
+    FilterType,
     FriendlyFilter,
     MultiTargetFilter,
+    NoneFilter,
     NotSelfFilter,
     SelfFilter,
-    FilterType,
     TargetFilter,
 )
 from sapai.pets import Pet
@@ -126,6 +127,25 @@ class TargetFilterTestCase(TestCase):
         # return nothing
         filt = AnyTargetFilter(owner, [filter_s, filter_f])
         self.assertEqual([], filt.filter(self.enemy_team, self.event2))
+
+    def test_none_filter(self):
+        filt = NoneFilter(self.friendly_team[0])
+        self.assertEqual(
+            self.friendly_team,
+            filt.filter(self.friendly_team, self.event0),
+        )
+        self.assertEqual(
+            self.friendly_team,
+            filt.filter(self.friendly_team, self.event1),
+        )
+        self.assertEqual(
+            self.friendly_team,
+            filt.filter(self.friendly_team, self.event2),
+        )
+        self.assertEqual(
+            self.combined_team,
+            filt.filter(self.combined_team, self.event2),
+        )
 
     def test_self_filter(self):
         filt = SelfFilter(self.friendly_team[0])

@@ -7,6 +7,7 @@ from sapai.effect.events import Event
 class FilterType(Enum):
     """Enumeration of types of filter"""
 
+    NONE = auto()
     SELF = auto()
     NOT_SELF = auto()
     FRIENDLY = auto()
@@ -140,6 +141,15 @@ class AnyTargetFilter(MultiTargetFilter):
         result = super().to_dict()
         result["op"] = "ANY"
         return result
+
+
+class NoneFilter(TargetFilter):
+    def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
+        """Does no filtering"""
+        return [p for p in pets]
+
+    def to_dict(self) -> dict:
+        return {"filter": FilterType.NONE.name}
 
 
 class SelfFilter(TargetFilter):
