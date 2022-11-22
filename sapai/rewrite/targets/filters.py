@@ -30,7 +30,7 @@ class FilterType(Enum):
             cls.ADJACENT: AdjacentFilter,
         }
 
-    def to_class(self) -> "Filter":
+    def to_class(self) -> type["Filter"]:
         """Returns the TargetFilter class corresponding to the enum value"""
         mapping = self._get_mapping()
         if self in mapping:
@@ -40,7 +40,7 @@ class FilterType(Enum):
         return class_
 
     @classmethod
-    def from_class(cls, class_) -> "FilterType":
+    def from_class(cls, class_: type["Filter"]) -> "FilterType":
         """Returns the Type corresponding to the given class"""
         mapping = cls._get_mapping()
         for type_, map_class in mapping.items():

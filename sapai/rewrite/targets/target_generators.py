@@ -19,7 +19,7 @@ class TargetGeneratorType(Enum):
             cls.BATTLEFIELD: BattlefieldTargetGenerator,
         }
 
-    def to_class(self) -> "TargetGenerator":
+    def to_class(self) -> type["TargetGenerator"]:
         """Returns the TargetFilter class corresponding to the enum value"""
         mapping = self._get_mapping()
         if self in mapping:
@@ -29,7 +29,7 @@ class TargetGeneratorType(Enum):
         return class_
 
     @classmethod
-    def from_class(cls, class_) -> "TargetGeneratorType":
+    def from_class(cls, class_: type["TargetGenerator"]) -> "TargetGeneratorType":
         """Returns the Type corresponding to the given class"""
         mapping = cls._get_mapping()
         for type_, map_class in mapping.items():

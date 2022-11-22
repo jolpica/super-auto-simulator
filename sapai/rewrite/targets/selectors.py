@@ -28,7 +28,7 @@ class SelectorType(Enum):
             cls.STRENGTH: StrengthSelector,
         }
 
-    def to_class(self) -> "Selector":
+    def to_class(self) -> type["Selector"]:
         """Returns the Selector class corresponding to the enum value"""
         mapping = self._get_mapping()
         if self in mapping:
@@ -38,7 +38,7 @@ class SelectorType(Enum):
         return class_
 
     @classmethod
-    def from_class(cls, class_) -> "SelectorType":
+    def from_class(cls, class_: type["Selector"]) -> "SelectorType":
         """Returns the Type corresponding to the given class"""
         mapping = cls._get_mapping()
         for type_, map_class in mapping.items():
