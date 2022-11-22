@@ -1,8 +1,8 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from sapai.effect.events import Event, EventType
-from sapai.effect.targets import (
+from sapai.rewrite.events import Event, EventType
+from sapai.rewrite.targets import (
     AdjacentFilter,
     AheadFilter,
     AllFilter,

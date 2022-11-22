@@ -1,6 +1,6 @@
 from unittest import TestCase
 from unittest.mock import Mock
-from sapai.effect.triggers import (
+from sapai.rewrite.triggers import (
     AheadTrigger,
     AllTrigger,
     AlwaysTrigger,
@@ -16,7 +16,7 @@ from sapai.effect.triggers import (
     TypeTrigger,
     MultiTrigger,
 )
-from sapai.effect.events import Event, EventType
+from sapai.rewrite.events import Event, EventType
 from sapai.pets import Pet
 
 

@@ -4,7 +4,7 @@ from enum import Enum, auto
 import math
 
 from sapai.pets import Pet
-from sapai.effect.utils import nth_combination
+from sapai.rewrite.utils import nth_combination
 
 
 class SelectorType(Enum):

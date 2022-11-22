@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from sapai.pets import Pet
-from sapai.effect.events import Event
+from sapai.rewrite.events import Event
 
 
 class FilterType(Enum):

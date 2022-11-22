@@ -1,6 +1,6 @@
 from unittest import TestCase
 from unittest.mock import Mock
-from sapai.effect.events import Event, EventType
+from sapai.rewrite.events import Event, EventType
 from sapai.pets import Pet
 
 
