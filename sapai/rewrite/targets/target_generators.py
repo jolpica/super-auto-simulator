@@ -50,8 +50,8 @@ class TargetGenerator(ABC):
         return self._selector.select(filtered, num, rand)
 
     @abstractmethod
-    def get(self, event: Event, num: int, rand: float):
-        pass
+    def get(self, event: Event, num: int, rand: float) -> list[Pet]:
+        raise NotImplementedError()
 
     def to_dict(self):
         return {
@@ -91,7 +91,7 @@ class BattlefieldTargetGenerator(TargetGenerator):
         super().__init__(selector, filter_)
         self._owner = owner
 
-    def get(self, event: Event, num: int, rand: float):
+    def get(self, event: Event, num: int, rand: float) -> list[Pet]:
         friendly_team, enemy_team = event.get_ordered_teams(self._owner)
         pets = [*friendly_team[::-1], *enemy_team]
         return self._filter_select(pets, event, num, rand)
