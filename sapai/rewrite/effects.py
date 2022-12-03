@@ -11,6 +11,7 @@ class Effect(ABC):
     def run_effect(self, level: int, event: Event, rand: float):
         raise NotImplementedError()
 
+
 class TargetedEffect(Effect):
     def __init__(self, target_generator: TargetGenerator, max_targets: int):
         self._target_generator = target_generator
@@ -18,17 +19,27 @@ class TargetedEffect(Effect):
 
 
 class AddStatsEffect(TargetedEffect):
-    def __init__(self, target_generator: TargetGenerator, max_targets: int = 1, attack: int = 0, health: int = 0, level_multiply=True):
+    def __init__(
+        self,
+        target_generator: TargetGenerator,
+        max_targets: int = 1,
+        attack: int = 0,
+        health: int = 0,
+        level_multiply=True,
+        temp_stats=False,
+    ):
         super().__init__(target_generator, max_targets)
         self._attack = attack
         self._health = health
         self._level_multiply = level_multiply
+        self._temp_stats = temp_stats
 
     def run_effect(self, level: int, event: Event, rand: float):
         targets = self._target_generator.get(event, self._max_targets, rand)
+        health_buff = self._health * (level * self._level_multiply)
+        attack_buff = self._attack * (level * self._level_multiply)
         for pet in targets:
-            pet.health += self._health * (level * self._level_multiply)
-            pet.attack += self._attack * (level * self._level_multiply)
+            pet.add_stats(attack_buff, health_buff, self._temp_stats)
 
 
 class EffectType(Enum):

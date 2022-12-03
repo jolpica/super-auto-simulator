@@ -32,6 +32,7 @@ build-backend = "poetry.core.masonry.api"
 docstring-min-length = 5
 
 ignore-patterns = ["^test_.*py"]
+max-attributes = 12
 
 
 [tool.pylint.format]
