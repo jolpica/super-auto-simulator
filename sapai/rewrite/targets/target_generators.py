@@ -4,8 +4,8 @@ from enum import Enum, auto
 from sapai.rewrite.pets import Pet
 from sapai.rewrite.events import Event
 
+from sapai.rewrite.targets.selectors import Selector
 from .filters import Filter, NoneFilter
-from .selectors import Selector
 
 
 class TargetGeneratorType(Enum):
