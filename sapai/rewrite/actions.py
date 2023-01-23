@@ -9,7 +9,7 @@ class ActionType(Enum):
     ADD_STATS = auto()
     ADD_TEMP_STATS = auto()
     SUMMON = auto()
-    DAMAGE = auto()
+    DEAL_DAMAGE = auto()
 
 
 class Action(ABC):
@@ -25,6 +25,8 @@ class TargetedAction(Action):
 
 
 class AddStatsAction(TargetedAction):
+    """Add attack/health stats to targeted pets"""
+
     def __init__(
         self,
         target_generator: TargetGenerator,

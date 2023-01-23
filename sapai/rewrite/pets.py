@@ -7,6 +7,7 @@ class Pet:
     def __init__(self) -> None:
         self.name = ""
         self.tier = 1
+
         self._perm_attack = 1
         self._perm_health = 1
 
