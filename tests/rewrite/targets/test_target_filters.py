@@ -1,6 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
+from sapai.pets import Pet
 from sapai.rewrite.events import Event, EventType
 from sapai.rewrite.targets import (
     AdjacentFilter,
@@ -9,16 +10,14 @@ from sapai.rewrite.targets import (
     AnyFilter,
     BehindFilter,
     EnemyFilter,
+    Filter,
     FilterType,
     FriendlyFilter,
     MultiFilter,
     NoneFilter,
     NotSelfFilter,
     SelfFilter,
-    Filter,
-    FilterType,
 )
-from sapai.pets import Pet
 
 
 class FilterTypeTestCase(TestCase):

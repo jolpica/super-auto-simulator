@@ -1,10 +1,11 @@
 """Module containing target generator definitions"""
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from sapai.rewrite.pets import Pet
-from sapai.rewrite.events import Event
 
+from sapai.rewrite.events import Event
+from sapai.rewrite.pets import Pet
 from sapai.rewrite.targets.selectors import Selector
+
 from .filters import Filter, NoneFilter
 
 

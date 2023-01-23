@@ -1,7 +1,8 @@
-from enum import Enum, auto
 from dataclasses import dataclass, field
-from sapai.pets import Pet
+from enum import Enum, auto
+
 from sapai.foods import Food
+from sapai.pets import Pet
 from sapai.teams import Team
 
 

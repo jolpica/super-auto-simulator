@@ -1,16 +1,16 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
+from sapai.pets import Pet
+from sapai.rewrite.events import Event, EventType
 from sapai.rewrite.targets import (
     BattlefieldTargetGenerator,
     FirstSelector,
-    RandomSelector,
     FriendlyFilter,
+    RandomSelector,
     TargetGenerator,
     TargetGeneratorType,
 )
-from sapai.pets import Pet
-from sapai.rewrite.events import Event, EventType
 
 
 class SelectorTypeTestCase(TestCase):

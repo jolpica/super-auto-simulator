@@ -1,7 +1,7 @@
 """Module containing target selector definitions"""
+import math
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-import math
 
 from sapai.pets import Pet
 from sapai.rewrite.utils import nth_combination

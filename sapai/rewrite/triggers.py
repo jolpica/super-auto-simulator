@@ -1,6 +1,7 @@
 """Module defining Trigger classes"""
 from abc import ABC, abstractmethod
 from typing import List, Union
+
 from sapai.pets import Pet
 from sapai.rewrite.events import Event, EventType
 
