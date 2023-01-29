@@ -49,3 +49,6 @@ addopts = "--strict-config --cov=sapai/rewrite --cov-report=html"
 testpaths = [
     "tests/rewrite",
 ]
+
+[tool.isort]
+profile="black"
