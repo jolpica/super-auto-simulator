@@ -3,7 +3,7 @@ import math
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
-from sapai.pets import Pet
+from sapai.rewrite.pets import Pet
 from sapai.rewrite.utils import nth_combination
 
 

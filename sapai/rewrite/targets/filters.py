@@ -4,7 +4,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
-from sapai.pets import Pet
+from sapai.rewrite.pets import Pet
 from sapai.rewrite.events import Event
 
 
