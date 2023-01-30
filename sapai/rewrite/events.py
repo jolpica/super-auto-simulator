@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-from sapai.foods import Food
-from sapai.pets import Pet
-from sapai.teams import Team
+from sapai.rewrite.pets import Pet
+from sapai.rewrite.teams import Team
 
 
 class EventType(Enum):
@@ -35,7 +34,7 @@ class Event:
 
     type: EventType
     pet: Pet = None
-    food: Food = None
+    # food: Food = None
     in_battle: bool = False
     teams: tuple[Team] = field(default_factory=tuple)
 
