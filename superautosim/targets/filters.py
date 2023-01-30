@@ -4,8 +4,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
-from sapai.rewrite.events import Event
-from sapai.rewrite.pets import Pet
+from superautosim.events import Event
+from superautosim.pets import Pet
 
 
 class FilterType(Enum):

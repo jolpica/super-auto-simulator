@@ -1,6 +1,6 @@
 import pytest
 
-from sapai.rewrite.pets import Pet
+from superautosim.pets import Pet
 
 
 @pytest.mark.parametrize(

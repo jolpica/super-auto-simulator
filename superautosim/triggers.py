@@ -2,8 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Union
 
-from sapai.rewrite.events import Event, EventType
-from sapai.rewrite.pets import Pet
+from superautosim.events import Event, EventType
+from superautosim.pets import Pet
 
 
 class Trigger(ABC):

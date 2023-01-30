@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
-from sapai.rewrite.events import Event
+from superautosim.events import Event
 
 from .targets.target_generators import TargetGenerator
 

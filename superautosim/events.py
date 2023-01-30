@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-from sapai.rewrite.pets import Pet
-from sapai.rewrite.teams import Team
+from superautosim.pets import Pet
+from superautosim.teams import Team
 
 
 class EventType(Enum):

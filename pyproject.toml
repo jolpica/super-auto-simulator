@@ -5,7 +5,7 @@ description = "Simulator for Super Auto Pets"
 authors = ["JorVLP <47005135+JorVLP@users.noreply.github.com>"]
 readme = "README.md"
 packages = [
-    { include = "sapai" }
+    { include = "superautosim" }
 ]
 
 [tool.poetry.dependencies]
@@ -45,9 +45,9 @@ max-line-length = 100
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--strict-config --cov=sapai/rewrite --cov-report=html"
+addopts = "--strict-config --cov=superautosim --cov-report=html"
 testpaths = [
-    "tests/rewrite",
+    "tests/",
 ]
 
 [tool.isort]

@@ -2,8 +2,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from sapai.rewrite.actions import Action, ActionType, AddStatsAction, TargetedAction
-from sapai.rewrite.targets import TargetGenerator
+from superautosim.actions import Action, ActionType, AddStatsAction, TargetedAction
+from superautosim.targets import TargetGenerator
 
 
 @pytest.fixture

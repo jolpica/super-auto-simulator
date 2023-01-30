@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from sapai.rewrite.pets import Pet
+from superautosim.pets import Pet
 
 
 class Team:

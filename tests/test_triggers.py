@@ -1,9 +1,9 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from sapai.rewrite.events import Event, EventType
-from sapai.rewrite.pets import Pet
-from sapai.rewrite.triggers import (
+from superautosim.events import Event, EventType
+from superautosim.pets import Pet
+from superautosim.triggers import (
     AheadTrigger,
     AllTrigger,
     AlwaysTrigger,
