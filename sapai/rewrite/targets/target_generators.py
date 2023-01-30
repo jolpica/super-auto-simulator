@@ -64,7 +64,7 @@ class TargetGenerator(ABC):
         }
 
     @staticmethod
-    def from_dict(dict_: dict, owner: Pet) -> "TargetGenerator":
+    def from_dict(dict_: dict, owner: Pet) -> TargetGenerator:
         """Creates a target generator from its dictionary representation
 
         Args:
