@@ -97,9 +97,6 @@ class TriggerFactoryTestCase(TestCase):
         self.assertEqual(
             trigger1._triggers[0].to_dict(), trigger2._triggers[0].to_dict()
         )
-        print()
-        print(trigger.to_dict())
-        print(trigger_dict)
 
     def test_type_trigger_to_dict(self):
         trigger_dict = {"event": "NONE"}

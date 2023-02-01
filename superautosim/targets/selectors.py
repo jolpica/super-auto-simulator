@@ -97,7 +97,6 @@ class Selector(ABC):
             TargetFilter: Selector instance specified by selector_dict
         """
         types = [type_.name for type_ in SelectorType]
-        print(types)
         if dict_.get("selector") not in types:
             raise ValueError("Invalid Selector dict representation ('selector' value)")
 

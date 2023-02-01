@@ -15,7 +15,7 @@ def nth_combination(iterable, r, index):
         iterable (Iterable): iterable of objects to get a combination of
         r (int): The size of the combination
         index (int): The index of the combination in the range of combinations
-            Must be between 0 and 1 - the total possible combinations (nCr).
+            Must be between 0 and `nCr - 1` - the total possible combinations (nCr).
 
     Raises:
         IndexError: When the index is out of bounds of list(combinations(iterable, r))
@@ -26,8 +26,6 @@ def nth_combination(iterable, r, index):
     pool = tuple(iterable)
     n = len(pool)
     c = math.comb(n, r)
-    if index < 0:
-        index += c
     if index < 0 or index >= c:
         raise IndexError
     result = []
