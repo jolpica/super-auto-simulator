@@ -15,7 +15,7 @@ class ActionType(Enum):
 
 class Action(ABC):
     @abstractmethod
-    def run_effect(self, level: int, event: Event, rand: float):
+    def run(self, level: int, event: Event, rand: float):
         raise NotImplementedError()
 
 
@@ -43,7 +43,7 @@ class AddStatsAction(TargetedAction):
         self._level_multiply = level_multiply
         self._temp_stats = temp_stats
 
-    def run_effect(self, level: int, event: Event, rand: float):
+    def run(self, level: int, event: Event, rand: float):
         targets = self._target_generator.get(event, self._max_targets, rand)
         health_buff = self._health * (level * self._level_multiply)
         attack_buff = self._attack * (level * self._level_multiply)

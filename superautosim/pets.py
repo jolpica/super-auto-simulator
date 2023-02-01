@@ -34,6 +34,15 @@ class Pet:
     def health(self):
         return self._perm_health + self._temp_health
 
+    @property
+    def stats(self):
+        return (
+            self._perm_attack,
+            self._perm_health,
+            self._temp_attack,
+            self._temp_health,
+        )
+
     def add_stats(self, attack=0, health=0, temp_stats=False):
         """Add temporary or permanent attack / health stats to the pet
 
@@ -61,3 +70,6 @@ class Pet:
 
             self._perm_attack += attack_added
             self._perm_health += health_added
+
+    def __repr__(self) -> str:
+        return f"{self.name}<{self.attack}-{self.health}>"
