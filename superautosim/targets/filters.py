@@ -160,6 +160,10 @@ class AnyFilter(MultiFilter):
 class NoneFilter(Filter):
     """No Filtering"""
 
+    def __init__(self, owner: Pet | None):
+        if owner:
+            super().__init__(owner)
+
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         """Does no filtering"""
         return [p for p in pets]

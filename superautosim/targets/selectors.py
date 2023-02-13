@@ -117,7 +117,7 @@ class Selector(ABC):
 class FirstSelector(Selector):
     """Selects the left-most (first) n targets"""
 
-    def select(self, pets: list[Pet], num: int, rand: float = None) -> list[Pet]:
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         self._validate_args(pets, num, 0)
         return pets[:num]
 
@@ -125,7 +125,7 @@ class FirstSelector(Selector):
 class LastSelector(FirstSelector):
     """Selects the right-most (last) n targets"""
 
-    def select(self, pets: list[Pet], num: int, rand: float = None) -> list[Pet]:
+    def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         return super().select(pets[::-1], num, rand)
 
 

@@ -43,35 +43,38 @@ class TargetSelectorTestCase(TestCase):
     def test_first_target_selector(self):
         """Tests first target selector returns first n pets"""
         selector = FirstSelector()
-        self.assertEqual([], selector.select(self.friendly_team, num=0))
+        self.assertEqual([], selector.select(self.friendly_team, num=0, rand=0))
         self.assertEqual(
-            [self.friendly_team[0]], selector.select(self.friendly_team, num=1)
+            [self.friendly_team[0]], selector.select(self.friendly_team, num=1, rand=0)
         )
         self.assertEqual(
             [self.friendly_team[0], self.friendly_team[1]],
-            selector.select(self.friendly_team, num=2),
+            selector.select(self.friendly_team, num=2, rand=0),
         )
-        self.assertEqual(self.friendly_team, selector.select(self.friendly_team, num=5))
         self.assertEqual(
-            self.friendly_team, selector.select(self.friendly_team, num=10)
+            self.friendly_team, selector.select(self.friendly_team, num=5, rand=0)
+        )
+        self.assertEqual(
+            self.friendly_team, selector.select(self.friendly_team, num=10, rand=0)
         )
 
     def test_last_target_selector(self):
         """Tests last target selector returns last n pets"""
         selector = LastSelector()
-        self.assertEqual([], selector.select(self.friendly_team, num=0))
+        self.assertEqual([], selector.select(self.friendly_team, num=0, rand=0))
         self.assertEqual(
-            [self.friendly_team[-1]], selector.select(self.friendly_team, num=1)
+            [self.friendly_team[-1]], selector.select(self.friendly_team, num=1, rand=0)
         )
         self.assertEqual(
             [self.friendly_team[-1], self.friendly_team[-2]],
-            selector.select(self.friendly_team, num=2),
+            selector.select(self.friendly_team, num=2, rand=0),
         )
         self.assertEqual(
-            self.friendly_team[::-1], selector.select(self.friendly_team, num=5)
+            self.friendly_team[::-1], selector.select(self.friendly_team, num=5, rand=0)
         )
         self.assertEqual(
-            self.friendly_team[::-1], selector.select(self.friendly_team, num=10)
+            self.friendly_team[::-1],
+            selector.select(self.friendly_team, num=10, rand=0),
         )
 
     def test_random_target_selector(self):

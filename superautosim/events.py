@@ -33,10 +33,10 @@ class Event:
     """Class for providing event data"""
 
     type: EventType
-    pet: Pet = None
+    pet: Pet | None = None
     # food: Food = None
     in_battle: bool = False
-    teams: tuple[Team] = field(default_factory=tuple)
+    teams: tuple = field(default_factory=tuple)
 
     def __post_init__(self):
         if len(self.teams) > 2:
@@ -66,7 +66,7 @@ class Event:
         if len(self.teams) > 0 and pet in self.teams[0]:
             friendly_team = self.teams[0]
             enemy_team = [] if len(self.teams) == 1 else self.teams[1]
-        elif len(self.teams) > 1 and pet in self.teams[1]:
+        elif len(self.teams) == 2 and pet in self.teams[1]:
             enemy_team, friendly_team = self.teams
         else:
             raise ValueError("pet must be in at least 1 event team")

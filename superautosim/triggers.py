@@ -1,4 +1,6 @@
 """Module defining Trigger classes"""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import List, Union
 
@@ -40,7 +42,7 @@ class Trigger(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, trigger_dict: dict) -> "Trigger":
+    def from_dict(cls, trigger_dict: dict) -> Trigger:
         """Creates a trigger from its dictionary representation
 
         Args:
@@ -52,7 +54,7 @@ class Trigger(ABC):
         Returns:
             Trigger: Trigger instance specified by trigger_dict
         """
-
+        trigger: Trigger
         # Create base trigger based on "op" or "event" key
         if trigger_dict.get("event") in [et.name for et in EventType]:
             trigger = TypeTrigger(EventType[trigger_dict["event"]])
@@ -84,9 +86,7 @@ class Trigger(ABC):
         return trigger
 
     @classmethod
-    def add_modifier_from_dict(
-        cls, trigger: "Trigger", modifier_dict: dict
-    ) -> "Trigger":
+    def add_modifier_from_dict(cls, trigger: Trigger, modifier_dict: dict) -> Trigger:
         """Add modifier to given trigger as given by modifier_dict
 
         Args:
@@ -115,6 +115,7 @@ class Trigger(ABC):
             and modifier_dict.get("n")
             and modifier_dict.get("reset_event")
         ):
+            modifier_trigger: type[LimitTrigger | CountTrigger]
             if modifier_dict["type"] == "limit":
                 modifier_trigger = LimitTrigger
             elif modifier_dict["type"] == "count":
@@ -208,7 +209,7 @@ class TypeTrigger(Trigger):
         self._event_type = event_type
 
     def is_triggered(self, event: Event, owner: Pet = None) -> bool:
-        return event and event.type is self._event_type
+        return bool(event and event.type is self._event_type)
 
     def to_dict(self) -> dict:
         return {"event": self._event_type.name}
@@ -218,6 +219,7 @@ class ModifierTrigger(Trigger):
     """Base class for a trigger that modifies another trigger"""
 
     def __init__(self, trigger: Union[Trigger, EventType]):
+        self._trigger: Trigger
         if isinstance(trigger, EventType):
             # Create a type trigger
             self._trigger = TypeTrigger(trigger)

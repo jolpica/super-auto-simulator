@@ -5,6 +5,11 @@ from superautosim.teams import Team
 
 
 @pytest.fixture
+def pet():
+    return Pet("pet", (1, 1))
+
+
+@pytest.fixture
 def friendly_team():
     return Team(
         [

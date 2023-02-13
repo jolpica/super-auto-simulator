@@ -12,7 +12,7 @@ def friendly_targen(friendly_team):
     return get_mock_target_generator(friendly_team)
 
 
-def get_mock_target_generator(pets):
+def get_mock_target_generator(pets) -> TargetGenerator:
     target_generator = Mock(TargetGenerator)
     target_generator.get = lambda _, max_targets=5, *args: list(pets)[:max_targets]
     return target_generator
@@ -41,7 +41,7 @@ def test_add_stats_action(
 
     addstats_action.run(1, None, 0)
     assert len(list(friendly_team)) == len(expected_stats)
-    for p, stats in zip(friendly_team, expected_stats):
+    for p, stats in zip(friendly_team.pets, expected_stats):
         assert p.stats == stats
 
 
@@ -66,7 +66,7 @@ def test_add_stats_action_level_multiply(
 
     addstats_action.run(level, None, 0)
     assert len(list(friendly_team)) == len(expected_stats)
-    for p, stats in zip(friendly_team, expected_stats):
+    for p, stats in zip(friendly_team.pets, expected_stats):
         assert p.stats[:2] == stats
 
 
