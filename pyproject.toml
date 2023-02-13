@@ -20,6 +20,7 @@ pytest = "^7.2.0"
 coverage = "^6.5.0"
 pytest-cov = "^4.0.0"
 isort = "^5.11.4"
+mypy = {extras = ["dmypy"], version = "^1.0.0"}
 
 
 [build-system]
@@ -52,3 +53,10 @@ testpaths = [
 
 [tool.isort]
 profile="black"
+
+[tool.mypy]
+exclude=["^tests"]
+no_implicit_optional=false
+
+[tool.pyright]
+exclude=["^tests"]
