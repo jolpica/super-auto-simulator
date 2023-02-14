@@ -34,13 +34,6 @@ def test_team_init_validation(pets, error):
         Team(pets=pets)
 
 
-def test_team_sumon_pet_invalid_index(friendly_team: Team, pet):
-    with pytest.raises(IndexError):
-        friendly_team.summon_pet(pet, -1)
-    with pytest.raises(IndexError):
-        friendly_team.summon_pet(friendly_team.MAX_TEAM_SIZE, -1)
-
-
 @pytest.mark.parametrize(
     ["slots", "index", "expected"],
     [
@@ -63,3 +56,12 @@ def test_team_insert_pet(slots, index, expected):
     team = Team(slots)
     assert team.insert_pet(100, index)
     assert team._slots == expected
+
+
+def test_validate_index(friendly_team: Team):
+    with pytest.raises(IndexError):
+        friendly_team._validate_index(-1)
+    with pytest.raises(IndexError):
+        friendly_team._validate_index(friendly_team.MAX_TEAM_SIZE)
+    for i in range(friendly_team.MAX_TEAM_SIZE):
+        friendly_team._validate_index(i)

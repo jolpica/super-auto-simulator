@@ -21,7 +21,7 @@ class Team:
         # Slots always has a length of MAX_TEAM_SIZE
         self._slots: list[Pet | None] = list(pets) + [None] * empty_slots
 
-    def summon_pet(self, pet: Pet, target_idx: int) -> bool:
+    def summon_pet(self, pet: Pet, index: int) -> bool:
         """Summon a pet as close as possible to the given idx
 
         Args:
@@ -31,8 +31,7 @@ class Team:
         Returns:
             bool: True when the pet was successfully summoned.
         """
-        if 0 > target_idx < self.MAX_TEAM_SIZE:
-            raise IndexError("Index to summon pet is out of bounds")
+        self._validate_index(index)
         if None in self:
             return False
 
@@ -49,6 +48,7 @@ class Team:
         Returns:
             bool: True if pet is successfully inserted. False otherwise.
         """
+        self._validate_index(index)
         if len(self.pets) >= self.MAX_TEAM_SIZE:
             return False
 
@@ -65,6 +65,10 @@ class Team:
     @property
     def pets(self) -> list[Pet]:
         return [p for p in self._slots if p]
+
+    def _validate_index(self, index: int):
+        if index < 0 or index >= self.MAX_TEAM_SIZE:
+            raise IndexError("Invalid Team slot index")
 
     def __iter__(self):
         return iter(self._slots)
