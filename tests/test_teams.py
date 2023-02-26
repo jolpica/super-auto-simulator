@@ -22,6 +22,13 @@ def test_team_iteration(team: Team):
     assert count == 5
 
 
+def test_team_subscript():
+    pets = [Pet(str(i)) for i in range(5)]
+    team = Team(pets)
+    for i in range(5):
+        assert pets[i] == team[i]
+
+
 @pytest.mark.parametrize(
     ["pets", "error"],
     [

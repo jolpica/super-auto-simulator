@@ -73,5 +73,8 @@ class Team:
     def __iter__(self):
         return iter(self._slots)
 
+    def __getitem__(self, key):
+        return self._slots.__getitem__(key)
+
     def __repr__(self) -> str:
         return f"Team<{self._slots}>"

@@ -1,5 +1,6 @@
 from unittest import TestCase
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+import pytest
 
 from superautosim.events import Event, EventType
 from superautosim.pets import Pet
@@ -13,31 +14,49 @@ from superautosim.targets import (
 )
 
 
-class SelectorTypeTestCase(TestCase):
-    def test_to_from_class(self):
-        """Tests all types map to a class and back"""
-        for type_ in TargetGeneratorType:
-            class_ = type_.to_class()
-            self.assertTrue(issubclass(class_, TargetGenerator), "not a subclass")
-            self.assertEqual(TargetGeneratorType.from_class(class_), type_)
+def test_type_to_from_class():
+    """Tests all types map to a class and back (all new types are added)"""
+    for type_ in TargetGeneratorType:
+        class_ = type_.to_class()
+        assert issubclass(class_, TargetGenerator), "not a subclass"
+        assert TargetGeneratorType.from_class(class_) == type_
 
 
-class TargetGeneratorTestCase(TestCase):
-    def setUp(self) -> None:
-        self.friendly_team = [Mock(Pet) for i in range(5)]
-        self.enemy_team = [Mock(Pet) for i in range(5)]
+def test_type_from_class_not_implemented():
+    """abstacts not implemented"""
+    with pytest.raises(NotImplementedError):
+        TargetGeneratorType.from_class(TargetGenerator)
 
-    def test_from_dict(self):
-        test = {
-            "target_generator": "BATTLEFIELD",
-            "filter": {"filter": "FRIENDLY"},
-            "selector": {"selector": "RANDOM"},
-        }
-        target = TargetGenerator.from_dict(test, self.friendly_team[0])
 
-        self.assertIsInstance(target, BattlefieldTargetGenerator)
-        self.assertIsInstance(target._filter, FriendlyFilter)
-        self.assertIsInstance(target._selector, RandomSelector)
+def test_get_not_implemented():
+    """abstacts not implemented"""
+    with patch.object(TargetGenerator, "__abstractmethods__", set()):
+        targen = TargetGenerator(None, None)
+        with pytest.raises(NotImplementedError):
+            targen.get(None, None, None)
+
+
+def test_from_dict(friendly_team):
+    test = {
+        "target_generator": "BATTLEFIELD",
+        "filter": {"filter": "FRIENDLY"},
+        "selector": {"selector": "RANDOM"},
+    }
+    target = TargetGenerator.from_dict(test, friendly_team[0])
+
+    assert isinstance(target, BattlefieldTargetGenerator)
+    assert isinstance(target._filter, FriendlyFilter)
+    assert isinstance(target._selector, RandomSelector)
+
+
+def test_from_dict_invalid(friendly_team):
+    test = {
+        "target_generator": "invalid",
+        "filter": {"filter": "FRIENDLY"},
+        "selector": {"selector": "RANDOM"},
+    }
+    with pytest.raises(ValueError):
+        TargetGenerator.from_dict(test, friendly_team[0])
 
 
 class BattlefieldTargetGeneratorTestCase(TestCase):

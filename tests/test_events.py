@@ -3,12 +3,13 @@ from unittest.mock import Mock
 
 from superautosim.events import Event, EventType
 from superautosim.pets import Pet
+from superautosim.teams import Team
 
 
 class EventTestCase(TestCase):
     def setUp(self):
-        self.friendly_team = [Mock(Pet) for i in range(5)]
-        self.enemy_team = [Mock(Pet) for i in range(5)]
+        self.friendly_team = Team([Mock(Pet) for i in range(5)])
+        self.enemy_team = Team([Mock(Pet) for i in range(5)])
         self.other_pet = Mock(Pet)
 
     def test_init_more_than_2_teams(self):

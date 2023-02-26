@@ -1,12 +1,10 @@
 [tool.poetry]
-name = "superautosim"
-version = "0.1.0"
-description = "Simulator for Super Auto Pets"
 authors = ["JorVLP <47005135+JorVLP@users.noreply.github.com>"]
+description = "Simulator for Super Auto Pets"
+name = "superautosim"
+packages = [{ include = "superautosim" }]
 readme = "README.md"
-packages = [
-    { include = "superautosim" }
-]
+version = "0.1.0"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
@@ -14,18 +12,18 @@ python = ">=3.9"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
+coverage = "^6.5.0"
 ipykernel = "^6.16.0"
+isort = "^5.11.4"
+mypy = { extras = ["dmypy"], version = "^1.0.0" }
 pylint = "^2.15.5"
 pytest = "^7.2.0"
-coverage = "^6.5.0"
 pytest-cov = "^4.0.0"
-isort = "^5.11.4"
-mypy = {extras = ["dmypy"], version = "^1.0.0"}
 
 
 [build-system]
-requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.2.0"]
 
 
 [tool.pylint.basic]
@@ -45,18 +43,23 @@ ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
 max-line-length = 100
 
 [tool.pytest.ini_options]
-minversion = "6.0"
 addopts = "--strict-config --cov=superautosim --cov-report=html"
-testpaths = [
-    "tests/",
-]
+minversion = "6.0"
+testpaths = ["tests/"]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
 
 [tool.isort]
-profile="black"
+profile = "black"
 
 [tool.mypy]
-exclude=["^tests"]
-no_implicit_optional=false
+exclude = ["^tests"]
+no_implicit_optional = false
 
 [tool.pyright]
-exclude=["^tests"]
+exclude = ["^tests"]

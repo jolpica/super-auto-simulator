@@ -52,6 +52,34 @@ class FilterType(Enum):
         raise NotImplementedError(f"{class_} does not map to a type")
 
 
+class MultiFilterType(Enum):
+    """Enumeration of types of multi-filter"""
+
+    ANY = auto()
+    ALL = auto()
+
+    @classmethod
+    def _get_mapping(cls) -> dict[MultiFilterType, type[MultiFilter]]:
+        return {
+            cls.ANY: AnyFilter,
+            cls.ALL: AllFilter,
+        }
+
+    def to_class(self) -> type[MultiFilter]:
+        """Returns the TargetFilter class corresponding to the enum value"""
+        mapping = self._get_mapping()
+        return mapping[self]
+
+    @classmethod
+    def from_class(cls, class_: type[MultiFilter]) -> MultiFilterType:
+        """Returns the Type corresponding to the given class"""
+        mapping = cls._get_mapping()
+        for type_, map_class in mapping.items():
+            if class_ is map_class:
+                return type_
+        raise NotImplementedError(f"{class_} does not map to a type")
+
+
 class Filter(ABC):
     """Filters a list of possible targets based on criteria"""
 

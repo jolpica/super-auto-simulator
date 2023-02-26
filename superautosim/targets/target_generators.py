@@ -25,11 +25,7 @@ class TargetGeneratorType(Enum):
     def to_class(self) -> type[TargetGenerator]:
         """Returns the TargetFilter class corresponding to the enum value"""
         mapping = self._get_mapping()
-        if self in mapping:
-            class_ = mapping[self]
-        else:
-            raise NotImplementedError(f"{self} does not map to a class")
-        return class_
+        return mapping[self]
 
     @classmethod
     def from_class(cls, class_: type[TargetGenerator]) -> TargetGeneratorType:
