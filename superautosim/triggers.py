@@ -12,7 +12,7 @@ class Trigger(ABC):
     """Base class to determine if an ability's effect should be triggered"""
 
     @abstractmethod
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         """Determines if the given conditions should trigger an effect
 
         Args:
@@ -175,7 +175,7 @@ class MultiTrigger(Trigger):
 class AnyTrigger(MultiTrigger):
     """Triggers if any of the given triggers are triggered"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         for trigger in self._triggers:
             if trigger.is_triggered(event, owner):
                 return True
@@ -190,7 +190,7 @@ class AnyTrigger(MultiTrigger):
 class AllTrigger(MultiTrigger):
     """Triggers if all of the given triggers are triggered"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         for trigger in self._triggers:
             if not trigger.is_triggered(event, owner):
                 return False
@@ -208,7 +208,7 @@ class TypeTrigger(Trigger):
     def __init__(self, event_type: EventType):
         self._event_type = event_type
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         return bool(event and event.type is self._event_type)
 
     def to_dict(self) -> dict:
@@ -228,7 +228,7 @@ class ModifierTrigger(Trigger):
         else:
             raise ValueError("trigger must be of type Trigger or EventType")
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         return self._trigger.is_triggered(event, owner)
 
     def to_dict(self) -> dict:
@@ -257,7 +257,7 @@ class LimitTrigger(ModifierTrigger):
     def reset_limit(self):
         self.remaining_limit = self.trigger_limit
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if event.type is self._reset_event:
             self.reset_limit()
 
@@ -299,7 +299,7 @@ class CountTrigger(ModifierTrigger):
     def reset_count(self):
         self.count = 0
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if event.type is self._reset_event:
             self.reset_count()
 
@@ -325,7 +325,7 @@ class CountTrigger(ModifierTrigger):
 class SelfTrigger(ModifierTrigger):
     """Trigger on type IF event pet is owner pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if not super().is_triggered(event, owner):
             return False
         return None not in (owner, event.pet) and owner is event.pet
@@ -340,7 +340,7 @@ class SelfTrigger(ModifierTrigger):
 class FriendlyTrigger(ModifierTrigger):
     """Trigger on type IF event pet is a *non-owner* friendly pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if not super().is_triggered(event, owner):
             return False
 
@@ -365,7 +365,7 @@ class FriendlyTrigger(ModifierTrigger):
 class EnemyTrigger(ModifierTrigger):
     """Trigger on type IF event pet is an enemy pet"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if not super().is_triggered(event, owner):
             return False
 
@@ -391,7 +391,7 @@ class EnemyTrigger(ModifierTrigger):
 class AheadTrigger(ModifierTrigger):
     """Trigger on type IF event pet is ahead"""
 
-    def is_triggered(self, event: Event, owner: Pet = None) -> bool:
+    def is_triggered(self, event: Event, owner: Pet) -> bool:
         if not super().is_triggered(event, owner):
             return False
 

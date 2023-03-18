@@ -353,21 +353,21 @@ class TriggerTestCase(TestCase):
         """Test AnyTrigger will do boolean OR on given triggers"""
         # Empty list
         trigger = AnyTrigger([])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, None))
         # False
         trigger = AnyTrigger([NeverTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, None))
         trigger = AnyTrigger([NeverTrigger(), NeverTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event, None))
         # True
         trigger = AnyTrigger([AlwaysTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event, None))
         trigger = AnyTrigger([AlwaysTrigger(), AlwaysTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event, None))
         trigger = AnyTrigger([NeverTrigger(), NeverTrigger(), AlwaysTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event, None))
         trigger = AnyTrigger([AlwaysTrigger(), NeverTrigger(), NeverTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event, None))
         # Check with None
         with self.assertRaises(TypeError):
             trigger = AnyTrigger(None)
@@ -378,21 +378,21 @@ class TriggerTestCase(TestCase):
         """Test AllTrigger will do boolean AND on given triggers"""
         # Empty list
         trigger = AllTrigger([])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         # True
         trigger = AllTrigger([AlwaysTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event,None))
         trigger = AllTrigger([AlwaysTrigger(), AlwaysTrigger()])
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertTrue(trigger.is_triggered(self.none_event,None))
         # False
         trigger = AllTrigger([NeverTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         trigger = AllTrigger([NeverTrigger(), NeverTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         trigger = AllTrigger([NeverTrigger(), NeverTrigger(), AlwaysTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         trigger = AllTrigger([AlwaysTrigger(), NeverTrigger(), NeverTrigger()])
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         # Check with None
         with self.assertRaises(TypeError):
             trigger = AllTrigger(None)
@@ -403,25 +403,25 @@ class TriggerTestCase(TestCase):
         """Type Trigger is true when event type matches"""
         trigger = TypeTrigger(EventType.START_OF_BATTLE)
         # False when event doesn't match
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
         # True when event matches
-        self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event,None))
         self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertTrue(trigger.is_triggered(self.start_of_battle_event, self.pet2))
 
         # Test with none values
         trigger = TypeTrigger(EventType.START_OF_BATTLE)
-        self.assertFalse(trigger.is_triggered(None))
+        self.assertFalse(trigger.is_triggered(None,None))
         self.assertFalse(trigger.is_triggered(None, self.pet1))
 
         trigger = TypeTrigger(None)
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
-        self.assertFalse(trigger.is_triggered(self.start_of_battle_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_battle_event,None))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet2))
-        self.assertFalse(trigger.is_triggered(None))
+        self.assertFalse(trigger.is_triggered(None,None))
         self.assertFalse(trigger.is_triggered(None, self.pet1))
 
     def test_modifier_trigger(self):
@@ -431,14 +431,14 @@ class TriggerTestCase(TestCase):
             ModifierTrigger(None)
         # TypeTrigger when EventType given
         trigger = ModifierTrigger(EventType.START_OF_BATTLE)
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertTrue(trigger.is_triggered(self.start_of_battle_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertTrue(trigger.is_triggered(self.start_of_battle_event,None))
 
         # Given trigger works as expected
         trigger = ModifierTrigger(NeverTrigger())
-        self.assertFalse(trigger.is_triggered(None))
+        self.assertFalse(trigger.is_triggered(None,None))
         trigger = ModifierTrigger(AlwaysTrigger())
-        self.assertTrue(trigger.is_triggered(None))
+        self.assertTrue(trigger.is_triggered(None,None))
 
     def test_limit_trigger(self):
         """Limited Trigger only triggers a maximum amount of times"""
@@ -447,7 +447,7 @@ class TriggerTestCase(TestCase):
         )
         count = 0
         for i in range(5):
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
         self.assertEqual(count, 3)
         # Test trigger that sometimes is false
@@ -456,9 +456,9 @@ class TriggerTestCase(TestCase):
         )
         count = 0
         for i in range(5):
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
-            if trigger.is_triggered(self.start_of_battle_event):
+            if trigger.is_triggered(self.start_of_battle_event,None):
                 count += 1
         self.assertEqual(count, 3)
         # Test trigger can reset
@@ -467,11 +467,11 @@ class TriggerTestCase(TestCase):
         )
         count = 0
         for i in range(20):
-            if i % 5 == 0 and trigger.is_triggered(self.start_of_turn_event):
+            if i % 5 == 0 and trigger.is_triggered(self.start_of_turn_event,None):
                 count += 1
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
-            if trigger.is_triggered(self.start_of_battle_event):
+            if trigger.is_triggered(self.start_of_battle_event,None):
                 count += 1
         self.assertEqual(count, 4)
 
@@ -485,36 +485,36 @@ class TriggerTestCase(TestCase):
         trigger = CountTrigger(AlwaysTrigger(), n=2)
         count = 0
         for i in range(5):
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
         self.assertEqual(count, 2)
         trigger = CountTrigger(AlwaysTrigger(), n=3)
         count = 0
         for i in range(5):
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
         self.assertEqual(count, 1)
         # Test trigger that sometimes is false
         trigger = CountTrigger(TypeTrigger(EventType.NONE), n=2)
         count = 0
         for i in range(5):
-            if trigger.is_triggered(self.none_event):
+            if trigger.is_triggered(self.none_event,None):
                 count += 1
-            if trigger.is_triggered(self.start_of_battle_event):
+            if trigger.is_triggered(self.start_of_battle_event,None):
                 count += 1
         self.assertEqual(count, 2)
         # Test trigger can reset
         trigger = CountTrigger(
             TypeTrigger(EventType.NONE), n=3, reset_event=EventType.START_OF_TURN
         )
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertFalse(trigger.is_triggered(self.none_event))
-        self.assertTrue(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event,None))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event,None))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
+        self.assertTrue(trigger.is_triggered(self.none_event,None))
 
         with self.assertRaises(TypeError):
             CountTrigger(EventType.NONE, n=1, reset_event="NONE")
@@ -525,14 +525,14 @@ class TriggerTestCase(TestCase):
         """self Trigger tests"""
         # False when no event pet is given
         trigger = SelfTrigger(EventType.NONE)
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
         # When only 1 team is given
         trigger = SelfTrigger(EventType.START_OF_TURN)
         self.assertTrue(trigger.is_triggered(self.start_of_turn_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
-        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event,None))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet2))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
         # When 2 teams are given
@@ -550,14 +550,14 @@ class TriggerTestCase(TestCase):
         """friendly Trigger does NOT trigger on self, but does trigger on friends"""
         # False when no event pet is given
         trigger = FriendlyTrigger(EventType.NONE)
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
         # When only 1 team is given
         trigger = FriendlyTrigger(EventType.START_OF_TURN)
         # False when pet is self (friendly pet is not trigger pet)
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet1))
         self.assertTrue(trigger.is_triggered(self.start_of_turn_event, self.pet2))
-        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event,None))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
         self.assertFalse(trigger.is_triggered(self.start_of_battle_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
@@ -584,11 +584,11 @@ class TriggerTestCase(TestCase):
         """enemy Trigger triggers on enemy team"""
         # False when no event pet is given
         trigger = EnemyTrigger(EventType.NONE)
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
         # When only 1 team is given (always false)
         trigger = EnemyTrigger(EventType.START_OF_TURN)
-        self.assertFalse(trigger.is_triggered(self.start_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.start_of_turn_event,None))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet2))
         self.assertFalse(trigger.is_triggered(self.start_of_turn_event, self.pet3))
@@ -622,12 +622,12 @@ class TriggerTestCase(TestCase):
         """enemy Trigger triggers on enemy team"""
         # False when no event pet is given
         trigger = AheadTrigger(EventType.NONE)
-        self.assertFalse(trigger.is_triggered(self.none_event))
+        self.assertFalse(trigger.is_triggered(self.none_event,None))
         self.assertFalse(trigger.is_triggered(self.none_event, self.pet1))
         # When only 1 team is given
         trigger = AheadTrigger(EventType.END_OF_TURN)  # event pet is pet2
         self.assertTrue(trigger.is_triggered(self.end_of_turn_event, self.pet3))
-        self.assertFalse(trigger.is_triggered(self.end_of_turn_event))
+        self.assertFalse(trigger.is_triggered(self.end_of_turn_event,None))
         self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet1))
         self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet2))
         self.assertFalse(trigger.is_triggered(self.end_of_turn_event, self.pet4))
