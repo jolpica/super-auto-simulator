@@ -32,8 +32,13 @@ class Team:
             bool: True when the pet was successfully summoned.
         """
         self._validate_index(index)
-        if None in self:
+        if None not in self._slots:
             return False
+
+        if None in self._slots[:index]:
+            index = max(0, index - 1)
+
+        return self.insert_pet(pet, index)
 
     def insert_pet(self, pet: Pet, index: int) -> bool:
         """Insert the pet at the given index. Returns False if there is no space.
