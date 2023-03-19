@@ -11,8 +11,11 @@ class SingleFilterDict(TypedDict, total=True):
     filter: SingleFilterValue
 
 
+MultiFilterValue = Literal["ANY", "ALL"]
+
+
 class MultiFilterDict(TypedDict, total=True):
-    op: Literal["ANY", "ALL"]
+    op: MultiFilterValue
     filters: list[FilterDict]
 
 

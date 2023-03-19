@@ -6,6 +6,7 @@ from enum import Enum, auto
 
 from superautosim.events import Event
 from superautosim.pets import Pet
+from superautosim.typing import MultiFilterDict, FilterDict
 
 
 class FilterType(Enum):
@@ -90,7 +91,7 @@ class Filter(ABC):
     def filter(self, pets: list[Pet], event: Event) -> list[Pet]:
         raise NotImplementedError()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> FilterDict:
         """Generates a dictionary representation of the filter
 
         Returns:
@@ -104,7 +105,8 @@ class Filter(ABC):
                     "filters": List of nested filter dicts to perform "op" on.
                 }
         """
-        return {"filter": FilterType.from_class(type(self)).name}
+        # Ignore as FilterType attribute name will always be a valid value of filter
+        return {"filter": FilterType.from_class(type(self)).name}  # type: ignore[typeddict-item]
 
     @classmethod
     def from_dict(cls, filter_dict: dict, owner: Pet) -> "Filter":
@@ -147,8 +149,9 @@ class MultiFilter(Filter):
         self._filters = filters
 
     @abstractmethod
-    def to_dict(self) -> dict:
-        return {
+    def to_dict(self) -> MultiFilterDict:
+        # Silence error for missing "op" key as it is added in subclasses
+        return {  # type: ignore[typeddict-item]
             "filters": [f.to_dict() for f in self._filters],
         }
 
@@ -162,7 +165,7 @@ class AllFilter(MultiFilter):
             pets = t_filter.filter(pets, event)
         return [p for p in pets]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> MultiFilterDict:
         result = super().to_dict()
         result["op"] = "ALL"
         return result
@@ -179,7 +182,7 @@ class AnyFilter(MultiFilter):
         # Ensure that pet order is preserved
         return [p for p in pets if p in returned_pets]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> MultiFilterDict:
         result = super().to_dict()
         result["op"] = "ANY"
         return result
