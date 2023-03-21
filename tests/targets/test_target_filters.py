@@ -1,3 +1,4 @@
+import typing
 from unittest import TestCase
 from unittest.mock import Mock
 
@@ -14,10 +15,31 @@ from superautosim.targets import (
     FilterType,
     FriendlyFilter,
     MultiFilter,
+    MultiFilterType,
+    MultiFilterValue,
     NoneFilter,
     NotSelfFilter,
     SelfFilter,
+    SingleFilterValue,
 )
+
+
+def test_single_filter_dict():
+    literals = set(typing.get_args(SingleFilterValue))
+    enums = set(type.name for type in FilterType)
+    assert literals == enums
+
+
+def test_mult_filter_dict():
+    literals = set(typing.get_args(MultiFilterValue))
+    enums = set(type.name for type in MultiFilterType)
+    assert literals == enums
+
+
+def test_filter_dict_ops_differ():
+    """Ensure single op is not in the multi filter ops"""
+    literals = set(typing.get_args(MultiFilterValue))
+    assert "SINGLE" not in literals
 
 
 class FilterTypeTestCase(TestCase):
@@ -335,13 +357,13 @@ class FilterToDictTestCase(TestCase):
     def test_simple_filter_to_dict(self):
         """Tests non op filters (not multi)"""
         test_dict = {
-            AdjacentFilter: {"filter": "ADJACENT"},
-            AheadFilter: {"filter": "AHEAD"},
-            BehindFilter: {"filter": "BEHIND"},
-            EnemyFilter: {"filter": "ENEMY"},
-            FriendlyFilter: {"filter": "FRIENDLY"},
-            NotSelfFilter: {"filter": "NOT_SELF"},
-            SelfFilter: {"filter": "SELF"},
+            AdjacentFilter: {"op":"SINGLE","filter": "ADJACENT"},
+            AheadFilter: {"op":"SINGLE","filter": "AHEAD"},
+            BehindFilter: {"op":"SINGLE","filter": "BEHIND"},
+            EnemyFilter: {"op":"SINGLE","filter": "ENEMY"},
+            FriendlyFilter: {"op":"SINGLE","filter": "FRIENDLY"},
+            NotSelfFilter: {"op":"SINGLE","filter": "NOT_SELF"},
+            SelfFilter: {"op":"SINGLE","filter": "SELF"},
         }
         owner = Mock(Pet)
         for filt, result in test_dict.items():
@@ -359,11 +381,11 @@ class FilterToDictTestCase(TestCase):
 
         owner = Mock(Pet)
         self.assertEqual(
-            {"filters": [{"filter": "AHEAD"}]},
+            {"filters": [{"op":"SINGLE","filter": "AHEAD"}]},
             TestMultiFilter(owner, [AheadFilter(owner)]).to_dict(),
         )
         self.assertEqual(
-            {"filters": [{"filter": "AHEAD"}, {"filter": "BEHIND"}]},
+            {"filters": [{"op":"SINGLE","filter": "AHEAD"}, {"op":"SINGLE","filter": "BEHIND"}]},
             TestMultiFilter(owner, [AheadFilter(owner), BehindFilter(owner)]).to_dict(),
         )
         self.assertEqual(
@@ -374,7 +396,7 @@ class FilterToDictTestCase(TestCase):
     def test_all_any_filter_to_dict(self):
         """Tests to_dict of any or all filter"""
         owner = Mock(Pet)
-        filters_list = [{"filter": "AHEAD"}, {"filter": "BEHIND"}]
+        filters_list = [{"op":"SINGLE","filter": "AHEAD"}, {"op":"SINGLE","filter": "BEHIND"}]
 
         self.assertEqual(
             {"op": "ALL", "filters": filters_list},
@@ -392,10 +414,10 @@ class FilterFromDictTestCase(TestCase):
         filter_names = [f.name for f in FilterType]
         owner = Mock(Pet)
         for name in filter_names:
-            Filter.from_dict({"filter": name}, owner)
+            Filter.from_dict({"op": "SINGLE", "filter": name}, owner)
 
         with self.assertRaises(ValueError):
-            Filter.from_dict({"filter": "!?NOTVALID"}, owner)
+            Filter.from_dict({"op": "SINGLE", "filter": "!?NOTVALID"}, owner)
 
     def test_multi_filter_from_dict(self):
         owner = Mock(Pet)

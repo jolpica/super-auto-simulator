@@ -1,5 +1,7 @@
+import typing
 from unittest import TestCase
 from unittest.mock import Mock, patch
+
 import pytest
 
 from superautosim.events import Event, EventType
@@ -11,7 +13,14 @@ from superautosim.targets import (
     RandomSelector,
     TargetGenerator,
     TargetGeneratorType,
+    TargetGeneratorTypeValue,
 )
+
+
+def test_target_generator_dict():
+    literals = set(typing.get_args(TargetGeneratorTypeValue))
+    enums = set(type.name for type in TargetGeneratorType)
+    assert literals == enums
 
 
 def test_type_to_from_class():
@@ -39,7 +48,7 @@ def test_get_not_implemented():
 def test_from_dict(friendly_team):
     test = {
         "target_generator": "BATTLEFIELD",
-        "filter": {"filter": "FRIENDLY"},
+        "filter": {"op": "SINGLE", "filter": "FRIENDLY"},
         "selector": {"selector": "RANDOM"},
     }
     target = TargetGenerator.from_dict(test, friendly_team[0])
@@ -52,7 +61,7 @@ def test_from_dict(friendly_team):
 def test_from_dict_invalid(friendly_team):
     test = {
         "target_generator": "invalid",
-        "filter": {"filter": "FRIENDLY"},
+        "filter": {"op": "SINGLE", "filter": "FRIENDLY"},
         "selector": {"selector": "RANDOM"},
     }
     with pytest.raises(ValueError):
@@ -117,7 +126,7 @@ class BattlefieldTargetGeneratorTestCase(TestCase):
         )
         test = {
             "target_generator": "BATTLEFIELD",
-            "filter": {"filter": "FRIENDLY"},
+            "filter": {"op": "SINGLE", "filter": "FRIENDLY"},
             "selector": {"selector": "RANDOM"},
         }
         self.assertEqual(test, target.to_dict())
@@ -127,7 +136,7 @@ class BattlefieldTargetGeneratorTestCase(TestCase):
         )
         test = {
             "target_generator": "BATTLEFIELD",
-            "filter": {"filter": "NONE"},
+            "filter": {"op": "SINGLE", "filter": "NONE"},
             "selector": {"selector": "RANDOM"},
         }
         self.assertEqual(test, target.to_dict())

@@ -1,3 +1,4 @@
+import typing
 from unittest import TestCase
 from unittest.mock import Mock
 
@@ -10,9 +11,16 @@ from superautosim.targets import (
     RandomSelector,
     Selector,
     SelectorType,
+    SelectorTypeValue,
     StrengthSelector,
     ValueSelector,
 )
+
+
+def test_selector_dict():
+    literals = set(typing.get_args(SelectorTypeValue))
+    enums = set(type.name for type in SelectorType)
+    assert literals == enums
 
 
 class SelectorTypeTestCase(TestCase):

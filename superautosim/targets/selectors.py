@@ -1,10 +1,24 @@
 """Module containing target selector definitions"""
+from __future__ import annotations
+
 import math
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from typing import Literal, TypedDict
 
 from superautosim.pets import Pet
 from superautosim.utils import nth_combination
+
+
+class SelectorOptionalKeysDict(TypedDict, total=False):
+    highest: bool
+
+
+class SelectorDict(SelectorOptionalKeysDict, total=True):
+    selector: SelectorTypeValue
+
+
+SelectorTypeValue = Literal["FIRST", "LAST", "RANDOM", "HEALTH", "ATTACK", "STRENGTH"]
 
 
 class SelectorType(Enum):
@@ -17,6 +31,8 @@ class SelectorType(Enum):
     ATTACK = auto()
     STRENGTH = auto()
 
+    name: SelectorTypeValue
+
     @classmethod
     def _get_mapping(cls):
         return {
@@ -28,7 +44,7 @@ class SelectorType(Enum):
             cls.STRENGTH: StrengthSelector,
         }
 
-    def to_class(self) -> type["Selector"]:
+    def to_class(self) -> type[Selector]:
         """Returns the Selector class corresponding to the enum value"""
         mapping = self._get_mapping()
         if self in mapping:
@@ -38,7 +54,7 @@ class SelectorType(Enum):
         return class_
 
     @classmethod
-    def from_class(cls, class_: type["Selector"]) -> "SelectorType":
+    def from_class(cls, class_: type[Selector]) -> SelectorType:
         """Returns the Type corresponding to the given class"""
         mapping = cls._get_mapping()
         for type_, map_class in mapping.items():
@@ -72,7 +88,7 @@ class Selector(ABC):
         """
         raise NotImplementedError()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SelectorDict:
         """Generates a dictionary representation of the selector
 
         Returns:
@@ -84,7 +100,7 @@ class Selector(ABC):
         return {"selector": SelectorType.from_class(type(self)).name}
 
     @staticmethod
-    def from_dict(dict_: dict) -> "Selector":
+    def from_dict(dict_: SelectorDict) -> Selector:
         """Creates a selector from its dictionary representation
 
         Args:
@@ -197,7 +213,7 @@ class ValueSelector(RandomSelector):
     def select(self, pets: list[Pet], num: int, rand: float) -> list[Pet]:
         raise NotImplementedError()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SelectorDict:
         result = super().to_dict()
         result["highest"] = self._highest
         return result

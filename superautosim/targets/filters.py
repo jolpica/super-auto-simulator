@@ -3,10 +3,27 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from typing import Literal, TypedDict, Union
 
 from superautosim.events import Event
 from superautosim.pets import Pet
-from superautosim.typing import MultiFilterDict, FilterDict
+
+
+class SingleFilterDict(TypedDict, total=True):
+    op: Literal["SINGLE"]
+    filter: SingleFilterValue
+
+
+class MultiFilterDict(TypedDict, total=True):
+    op: MultiFilterValue
+    filters: list[FilterDict]
+
+
+FilterDict = Union[SingleFilterDict, MultiFilterDict]
+
+SingleFilterValue = Literal[
+    "NONE", "SELF", "NOT_SELF", "FRIENDLY", "ENEMY", "AHEAD", "BEHIND", "ADJACENT"
+]
 
 
 class FilterType(Enum):
@@ -20,6 +37,8 @@ class FilterType(Enum):
     AHEAD = auto()
     BEHIND = auto()
     ADJACENT = auto()
+
+    name: SingleFilterValue
 
     @classmethod
     def _get_mapping(cls):
@@ -53,11 +72,16 @@ class FilterType(Enum):
         raise NotImplementedError(f"{class_} does not map to a type")
 
 
+MultiFilterValue = Literal["ANY", "ALL"]
+
+
 class MultiFilterType(Enum):
     """Enumeration of types of multi-filter"""
 
     ANY = auto()
     ALL = auto()
+
+    name: MultiFilterValue
 
     @classmethod
     def _get_mapping(cls) -> dict[MultiFilterType, type[MultiFilter]]:
@@ -105,11 +129,13 @@ class Filter(ABC):
                     "filters": List of nested filter dicts to perform "op" on.
                 }
         """
-        # Ignore as FilterType attribute name will always be a valid value of filter
-        return {"filter": FilterType.from_class(type(self)).name}  # type: ignore[typeddict-item]
+        return {
+            "op": "SINGLE",
+            "filter": FilterType.from_class(type(self)).name,
+        }
 
     @classmethod
-    def from_dict(cls, filter_dict: dict, owner: Pet) -> "Filter":
+    def from_dict(cls, filter_dict: FilterDict, owner: Pet) -> Filter:
         """Creates a filter from its dictionary representation
 
         Args:
@@ -121,21 +147,23 @@ class Filter(ABC):
         Returns:
             TargetFilter: TargetFilter instance specified by filter_dict
         """
-        types = [type_.name for type_ in FilterType]
-        if filter_dict.get("filter") in types:
-            class_ = FilterType[filter_dict["filter"]].to_class()
-            return class_(owner)
+        types = {type_.name for type_ in FilterType}
+        if "op" in filter_dict:
+            if filter_dict["op"] == "SINGLE" and filter_dict["filter"] in types:
+                class_ = FilterType[filter_dict["filter"]].to_class()
+                return class_(owner)
 
-        elif filter_dict.get("op") in ("ANY", "ALL") and filter_dict.get("filters"):
-            nested_filters = [
-                cls.from_dict(filt_d, owner) for filt_d in filter_dict["filters"]
-            ]
-            if filter_dict["op"] == "ANY":
-                return AnyFilter(owner, nested_filters)
-            return AllFilter(owner, nested_filters)
+            if (
+                filter_dict["op"] == "ANY" or filter_dict["op"] == "ALL"
+            ) and isinstance(filter_dict.get("filters"), list):
+                nested_filters = [
+                    cls.from_dict(filt_d, owner) for filt_d in filter_dict["filters"]
+                ]
+                if filter_dict["op"] == "ANY":
+                    return AnyFilter(owner, nested_filters)
+                return AllFilter(owner, nested_filters)
 
-        else:
-            raise ValueError("Invalid TargetFilter dict representation")
+        raise ValueError("Invalid TargetFilter dict representation")
 
 
 class MultiFilter(Filter):

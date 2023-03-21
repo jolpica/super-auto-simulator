@@ -3,18 +3,29 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from typing import Literal, TypedDict
 
 from superautosim.events import Event
 from superautosim.pets import Pet
-from superautosim.targets.selectors import Selector
+from superautosim.targets.filters import Filter, FilterDict, NoneFilter
+from superautosim.targets.selectors import Selector, SelectorDict
 
-from .filters import Filter, NoneFilter
+
+class TargetGeneratorDict(TypedDict, total=True):
+    target_generator: TargetGeneratorTypeValue
+    selector: SelectorDict
+    filter: FilterDict
+
+
+TargetGeneratorTypeValue = Literal["BATTLEFIELD"]
 
 
 class TargetGeneratorType(Enum):
     """Enumeration of types of selector"""
 
     BATTLEFIELD = auto()
+
+    name: TargetGeneratorTypeValue
 
     @classmethod
     def _get_mapping(cls):
@@ -40,7 +51,8 @@ class TargetGeneratorType(Enum):
 class TargetGenerator(ABC):
     """Generates a target(s)"""
 
-    def __init__(self, selector: Selector, filter_: Filter = None):
+    def __init__(self, owner: Pet, selector: Selector, filter_: Filter = None):
+        self._owner = owner
         self._selector = selector
         self._filter = filter_ if filter_ else NoneFilter(None)
 
@@ -52,7 +64,7 @@ class TargetGenerator(ABC):
     def get(self, event: Event, num: int, rand: float) -> list[Pet]:
         raise NotImplementedError()
 
-    def to_dict(self):
+    def to_dict(self) -> TargetGeneratorDict:
         return {
             "target_generator": TargetGeneratorType.from_class(type(self)).name,
             "filter": self._filter.to_dict(),
@@ -60,7 +72,7 @@ class TargetGenerator(ABC):
         }
 
     @staticmethod
-    def from_dict(dict_: dict, owner: Pet) -> TargetGenerator:
+    def from_dict(generator_dict: TargetGeneratorDict, owner: Pet) -> TargetGenerator:
         """Creates a target generator from its dictionary representation
 
         Args:
@@ -72,11 +84,11 @@ class TargetGenerator(ABC):
         Returns:
             TargetFilter: TargetGenerator instance specified by dict
         """
-        selector = Selector.from_dict(dict_.get("selector"))
-        filter_ = Filter.from_dict(dict_.get("filter"), owner)
+        selector = Selector.from_dict(generator_dict["selector"])
+        filter_ = Filter.from_dict(generator_dict["filter"], owner)
         types = [type_.name for type_ in TargetGeneratorType]
-        if dict_.get("target_generator") in types:
-            class_ = TargetGeneratorType[dict_["target_generator"]].to_class()
+        if generator_dict.get("target_generator") in types:
+            class_ = TargetGeneratorType[generator_dict["target_generator"]].to_class()
         else:
             raise ValueError("Invalid TargetGenerator dict representation")
 
@@ -85,10 +97,6 @@ class TargetGenerator(ABC):
 
 class BattlefieldTargetGenerator(TargetGenerator):
     """Generates target(s) from current battlefield teams"""
-
-    def __init__(self, owner: Pet, selector: Selector, filter_: Filter = None):
-        super().__init__(selector, filter_)
-        self._owner = owner
 
     def get(self, event: Event, num: int, rand: float) -> list[Pet]:
         friendly_team, enemy_team = event.get_ordered_teams(self._owner)
