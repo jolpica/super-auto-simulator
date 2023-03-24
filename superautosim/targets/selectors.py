@@ -4,10 +4,10 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import Literal, TypedDict
+from typing import Callable, Literal, TypedDict
 
 from superautosim.pets import Pet
-from superautosim.utils import nth_combination
+from superautosim.utils import ClassMapMixin, nth_combination
 
 
 class SelectorOptionalKeysDict(TypedDict, total=False):
@@ -19,48 +19,6 @@ class SelectorDict(SelectorOptionalKeysDict, total=True):
 
 
 SelectorTypeValue = Literal["FIRST", "LAST", "RANDOM", "HEALTH", "ATTACK", "STRENGTH"]
-
-
-class SelectorType(Enum):
-    """Enumeration of types of selector"""
-
-    FIRST = auto()
-    LAST = auto()
-    RANDOM = auto()
-    HEALTH = auto()
-    ATTACK = auto()
-    STRENGTH = auto()
-
-    name: SelectorTypeValue
-
-    @classmethod
-    def _get_mapping(cls):
-        return {
-            cls.FIRST: FirstSelector,
-            cls.LAST: LastSelector,
-            cls.RANDOM: RandomSelector,
-            cls.HEALTH: HealthSelector,
-            cls.ATTACK: AttackSelector,
-            cls.STRENGTH: StrengthSelector,
-        }
-
-    def to_class(self) -> type[Selector]:
-        """Returns the Selector class corresponding to the enum value"""
-        mapping = self._get_mapping()
-        if self in mapping:
-            class_ = mapping[self]
-        else:
-            raise NotImplementedError(f"{self} does not map to a class")
-        return class_
-
-    @classmethod
-    def from_class(cls, class_: type[Selector]) -> SelectorType:
-        """Returns the Type corresponding to the given class"""
-        mapping = cls._get_mapping()
-        for type_, map_class in mapping.items():
-            if class_ is map_class:
-                return type_
-        raise NotImplementedError(f"{class_} does not map to a type")
 
 
 class Selector(ABC):
@@ -244,3 +202,16 @@ class StrengthSelector(ValueSelector):
         self._validate_args(pets, num, rand)
         pet_value = [(p, p.attack + p.health) for p in pets]
         return self._tiebreak_select(pet_value, num, rand)
+
+
+class SelectorType(ClassMapMixin[Selector], Enum):
+    """Enumeration of types of selector"""
+
+    FIRST = FirstSelector
+    LAST = LastSelector
+    RANDOM = RandomSelector
+    HEALTH = HealthSelector
+    ATTACK = AttackSelector
+    STRENGTH = StrengthSelector
+
+    name: SelectorTypeValue

@@ -1,4 +1,25 @@
 import math
+from enum import Enum
+from typing import Generic, TypeVar
+
+T = TypeVar("T", bound=Enum)
+Y = TypeVar("Y")
+
+
+class ClassMapMixin(Generic[Y]):
+    """Helper class for Enums mapping to classes"""
+
+    def to_class(self) -> type[Y]:
+        """Returns the Selector class corresponding to the enum value"""
+        return self.value
+
+    @classmethod
+    def from_class(cls: type[T], class_: type[Y]) -> T:
+        """Returns the Type corresponding to the given class"""
+        for type_ in cls:
+            if type_.value is class_:
+                return type_
+        raise NotImplementedError(f"{class_} does not map to a type")
 
 
 def nth_combination(iterable, r, index):
